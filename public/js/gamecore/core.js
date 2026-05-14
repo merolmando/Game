@@ -85,10 +85,15 @@ async function gameLoop(timestamp) {
       Player.spawnTimer -= dt;
     } else if (Player.spawnTimer <= 0) {
       const exit = Map.checkExits(Player.x, Player.y);
-      if (exit) {
+  if (exit) {
         Transition.start(1.0);
-        await loadMap(exit.target);
-        Transition.loaded = true;
+        loadMap(exit.target).then(() => {
+          Transition.loaded = true;
+        }).catch(err => {
+          console.error(err.message);
+          Transition.loaded = true;
+          Map.current = null;
+        });
       }
     }
   }

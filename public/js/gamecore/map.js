@@ -3,6 +3,7 @@ const Map = {
 
   async load(path) {
     const res = await fetch(path);
+    if (!res.ok) throw new Error(`Error al cargar mapa (${res.status}): ${path}`);
     const data = await res.json();
     this.current = data;
     return data;
