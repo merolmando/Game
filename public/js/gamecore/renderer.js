@@ -1,74 +1,68 @@
 const Renderer = {
+  mode: '2d',
+
   init(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    // La resolución interna es fija; el CSS escala el canvas al tamaño del contenedor.
     canvas.width = SCREEN_W;
     canvas.height = SCREEN_H;
-    // Buffer de rayos: un resultado por cada columna de píxeles.
     this.rays = new Array(SCREEN_W);
   },
 
-  // Dibuja el frame completo cada ciclo del game loop.
   render(player) {
     const ctx = this.ctx;
-
-    // Calcula todos los rayos para la posición actual del jugador.
-    Raycaster.cast(this.rays, player);
-
     ctx.clearRect(0, 0, SCREEN_W, SCREEN_H);
 
-    this.drawCeiling(ctx);
-    this.drawFloor(ctx);
-    this.drawWalls(ctx, player);
-    this.drawMinimap(ctx, player);
+    this.mode = Map.current ? Map.current.mode : '2d';
+
+    if (this.mode === 'ray') {
+      Raycaster.cast(this.rays, player);
+      this.drawCeiling(ctx);
+      this.drawFloor(ctx);
+      this.drawWalls(ctx, player);
+      this.drawMinimap(ctx, player);
+    } else {
+      this.draw2D(ctx, player);
+    }
+
+    this.drawTransition(ctx);
   },
 
-  // Cielo: mitad superior de la pantalla.
   drawCeiling(ctx) {
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H / 2);
   },
 
-  // Suelo: mitad inferior de la pantalla.
   drawFloor(ctx) {
     ctx.fillStyle = '#2d2d44';
     ctx.fillRect(0, SCREEN_H / 2, SCREEN_W, SCREEN_H / 2);
   },
 
-  // Paredes: dibuja una franja vertical por cada rayo.
   drawWalls(ctx, player) {
-    // Mapa de colores según el tipo de tile.
-    const tileColors = {
-      1: '#c97b3a',
-      2: '#6b4c8a',
-    };
-
     for (let x = 0; x < this.rays.length; x++) {
       const ray = this.rays[x];
-      const baseColor = tileColors[ray.tileType] || '#888';
-      // Las paredes en el eje Y (N/S) se ven más oscuras para dar sensación 3D.
+      const info = Map.current.tileColors[ray.tileType];
+      const baseColor = info ? info.color : '#888';
       const shade = ray.side === 1 ? 0.6 : 1;
       ctx.fillStyle = this.shadeColor(baseColor, shade);
       ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
     }
   },
 
-  // Minimapa en la esquina inferior izquierda para orientación.
   drawMinimap(ctx, player) {
     const scale = 4;
     const offsetX = 10;
-    const offsetY = SCREEN_H - MAP_H * scale - 10;
+    const offsetY = SCREEN_H - Map.current.height * scale - 10;
 
-    // Dibuja el grid del mapa.
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
-        ctx.fillStyle = MAP[y][x] === 0 ? '#333' : '#888';
+    for (let y = 0; y < Map.current.height; y++) {
+      for (let x = 0; x < Map.current.width; x++) {
+        const tile = Map.current.tiles[y][x];
+        const info = Map.current.tileColors[tile];
+        ctx.fillStyle = info ? info.color : '#333';
         ctx.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale);
       }
     }
 
-    // Posición del jugador en el minimapa.
     const px = offsetX + player.x * scale;
     const py = offsetY + player.y * scale;
     ctx.fillStyle = '#f44';
@@ -76,7 +70,6 @@ const Renderer = {
     ctx.arc(px, py, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Dirección hacia donde mira el jugador.
     ctx.strokeStyle = '#f44';
     ctx.beginPath();
     ctx.moveTo(px, py);
@@ -84,7 +77,66 @@ const Renderer = {
     ctx.stroke();
   },
 
-  // Oscurece un color hexadecimal por un factor (0-1).
+  draw2D(ctx, player) {
+    const map = Map.current;
+    const ts = map.tileSize;
+    const mapPixelW = map.width * ts;
+    const mapPixelH = map.height * ts;
+
+    Camera.update(player.x * ts, player.y * ts, mapPixelW, mapPixelH);
+
+    const startCol = Math.floor(Camera.x / ts);
+    const startRow = Math.floor(Camera.y / ts);
+    const endCol = Math.ceil((Camera.x + SCREEN_W) / ts);
+    const endRow = Math.ceil((Camera.y + SCREEN_H) / ts);
+
+    for (let row = startRow; row < endRow; row++) {
+      for (let col = startCol; col < endCol; col++) {
+        if (row < 0 || row >= map.height || col < 0 || col >= map.width) continue;
+        const tile = map.tiles[row][col];
+        const info = map.tileColors[tile];
+        const sx = Math.round(col * ts - Camera.x);
+        const sy = Math.round(row * ts - Camera.y);
+        ctx.fillStyle = info ? info.color : '#000';
+        ctx.fillRect(sx, sy, ts, ts);
+      }
+    }
+
+    const pulse = Math.sin(Date.now() / 400) * 0.15 + 0.35;
+    for (const exit of map.exits || []) {
+      const info = map.tileColors[2];
+      const ex = Math.round(exit.tileX * ts - Camera.x);
+      const ey = Math.round(exit.tileY * ts - Camera.y);
+      ctx.fillStyle = info ? info.color : '#b8860b';
+      ctx.fillRect(ex, ey, ts, ts);
+      ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
+      ctx.fillRect(ex - 2, ey - 2, ts + 4, ts + 4);
+    }
+
+    const px = Math.round(player.x * ts - Camera.x);
+    const py = Math.round(player.y * ts - Camera.y) + Math.round(player.bobOffset);
+    const halfSize = 10;
+
+    ctx.fillStyle = '#4a9eff';
+    ctx.fillRect(px - halfSize, py - halfSize, halfSize * 2, halfSize * 2);
+
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px + player.facingX * 16, py + player.facingY * 16);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  },
+
+  drawTransition(ctx) {
+    const alpha = Transition.getAlpha();
+    if (alpha > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    }
+  },
+
   shadeColor(hex, factor) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);

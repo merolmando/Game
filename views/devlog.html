@@ -67,6 +67,22 @@
       <h2>2026-05-15 — Páginas de documentación (Docs)</h2>
       <p>Se añadieron las rutas <code>/docs</code> y <code>/docs/gamecore</code> al servidor. Creación de <code>views/docs.html</code> con renderizador de markdown propio (sin dependencias externas) que fetchea y renderiza los READMEs. El parser soporta headers, lists, tablas, code blocks, inline formatting y blockquotes. Se actualizó la navbar de todas las páginas con el enlace "Docs".</p>
     </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Arquitectura 50/50: Mapas JSON + 2D top-down</h2>
+      <p>Corrección de la arquitectura del motor: el mundo no es 100% raycaster, sino <strong>50% 2D top-down + 50% Raycasting pseudo-3D</strong>.</p>
+      <p><strong>Cambios estructurales:</strong></p>
+      <ul>
+        <li><strong>Mapas como JSON</strong> (<code>public/maps/inicio.json</code>, <code>cueva.json</code>): cada mapa contiene nombre, modo (<code>2d</code> o <code>ray</code>), tiles, colores, salidas y datos del jugador.</li>
+        <li><strong>Transición visual</strong> con fade out/in (1s total) al cambiar de mapa por puertas o eventos. Overlay negro con curva easeInOutQuad.</li>
+        <li><strong>Renderización 2D top-down</strong>: cámara centrada en el jugador con scroll suave, tiles de 32×32 coloreados según <code>tileColors</code>, puertas con brillo pulsante, y jugador como cuadrado azul con indicador de dirección.</li>
+        <li><strong>Jugador en 2D</strong>: movimiento cardinal (WASD en 4/8 direcciones), sin rotación, con animación de bob (±2px senoidal).</li>
+        <li><strong>Cámara</strong> (<code>camera.js</code>): viewport que sigue al jugador y se clampa a los bordes del mapa.</li>
+        <li><strong>Nuevo módulo camera.js</strong> para la gestión de viewport 2D.</li>
+        <li><strong>COLORES.md</strong> en <code>public/maps/</code> documentando los placeholders de tiles.</li>
+        <li>El raycaster existente se mantiene intacto para los mapas en modo <code>ray</code>.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

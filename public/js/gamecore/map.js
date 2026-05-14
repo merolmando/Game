@@ -1,33 +1,35 @@
-// Mapa del mundo en formato grid 2D.
-// 0 = suelo transitable, 1 = pared naranja, 2 = pared púrpura.
-const MAP = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,2,2,2,2,0,0,0,0,0,1],
-  [1,0,0,0,0,0,2,0,0,2,0,0,0,0,0,1],
-  [1,0,0,0,0,0,2,0,0,2,0,0,0,0,0,1],
-  [1,0,0,0,0,0,2,0,2,2,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-];
-
-const MAP_W = MAP[0].length;
-const MAP_H = MAP.length;
-
 const Map = {
-  // Devuelve el tipo de tile en una posición (coordenadas float).
-  // Si está fuera del mapa, devuelve 1 (pared por defecto).
-  getTile(x, y) {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    if (ix < 0 || ix >= MAP_W || iy < 0 || iy >= MAP_H) return 1;
-    return MAP[iy][ix];
+  current: null,
+
+  async load(path) {
+    const res = await fetch(path);
+    const data = await res.json();
+    this.current = data;
+    return data;
   },
 
-  // True si la posición es una pared (no transitable).
+  getTile(x, y) {
+    if (!this.current) return 1;
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    if (ix < 0 || ix >= this.current.width || iy < 0 || iy >= this.current.height) return 1;
+    return this.current.tiles[iy][ix];
+  },
+
   isSolid(x, y) {
-    return this.getTile(x, y) !== 0;
+    if (!this.current) return true;
+    const id = this.getTile(x, y);
+    const info = this.current.tileColors[id];
+    return info ? info.solid : true;
+  },
+
+  checkExits(px, py) {
+    if (!this.current) return null;
+    const ix = Math.floor(px + 0.5);
+    const iy = Math.floor(py + 0.5);
+    for (const exit of this.current.exits || []) {
+      if (exit.tileX === ix && exit.tileY === iy) return exit;
+    }
+    return null;
   },
 };

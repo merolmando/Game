@@ -2,16 +2,18 @@ const Player = {
   // Posición en el mapa (coordenadas float, tiles de 1x1).
   x: 2.5,
   y: 2.5,
-  // Vector dirección (hacia dónde mira el jugador).
+  // Vector dirección para modo raycaster.
   dirX: 1,
   dirY: 0,
-  // Vector del plano de la cámara (perpendicular a dir, define el FOV).
   planeX: 0,
   planeY: 0.66,
-  // Velocidades de movimiento y rotación por segundo.
+  // Dirección facial para modo 2D.
+  facingX: 0,
+  facingY: -1,
+  // Velocidades.
   moveSpeed: 3.0,
   rotSpeed: 2.0,
-  // Estadísticas del jugador (vida, maná, atributos).
+  // Estadísticas.
   hp: 100,
   maxHp: 100,
   mp: 50,
@@ -19,6 +21,12 @@ const Player = {
   str: 10,
   int: 10,
   level: 1,
+  // Protección al spawn: no se checkean exits durante este tiempo.
+  spawnTimer: 0,
+  // Animación de bob (oscilación al caminar).
+  bobPhase: 0,
+  bobOffset: 0,
+  moving: false,
 
   // Rota el vector dirección y el plano de cámara usando matriz de rotación.
   rotate(angle) {
@@ -32,7 +40,6 @@ const Player = {
   },
 
   // Mueve al jugador comprobando colisiones por separado en X e Y.
-  // Esto permite deslizarse por las paredes en lugar de quedarse pegado.
   move(dx, dy) {
     const nx = this.x + dx;
     const ny = this.y + dy;
@@ -40,25 +47,52 @@ const Player = {
     if (!Map.isSolid(this.x, ny)) this.y = ny;
   },
 
-  // Procesa input y actualiza posición/rotación cada frame.
   update(dt) {
+    const mode = Map.current ? Map.current.mode : 'ray';
+
+    if (mode === '2d') {
+      this.update2D(dt);
+    } else {
+      this.updateRay(dt);
+    }
+  },
+
+  updateRay(dt) {
     const move = this.moveSpeed * dt;
     const rot = this.rotSpeed * dt;
 
     if (Input.isLeft()) this.rotate(-rot);
     if (Input.isRight()) this.rotate(rot);
 
-    if (Input.isForward()) {
-      this.move(this.dirX * move, this.dirY * move);
+    this.moving = false;
+    if (Input.isForward()) { this.move(this.dirX * move, this.dirY * move); this.moving = true; }
+    if (Input.isBackward()) { this.move(-this.dirX * move, -this.dirY * move); this.moving = true; }
+    if (Input.isStrafeLeft()) { this.move(-this.dirY * move, this.dirX * move); this.moving = true; }
+    if (Input.isStrafeRight()) { this.move(this.dirY * move, -this.dirX * move); this.moving = true; }
+  },
+
+  update2D(dt) {
+    const move = this.moveSpeed * dt;
+    let dx = 0;
+    let dy = 0;
+
+    if (Input.isForward()) dy = -1;
+    if (Input.isBackward()) dy = 1;
+    if (Input.isLeft()) dx = -1;
+    if (Input.isRight()) dx = 1;
+
+    this.moving = dx !== 0 || dy !== 0;
+
+    if (this.moving) {
+      const len = dx !== 0 && dy !== 0 ? 0.7071 : 1;
+      this.facingX = dx;
+      this.facingY = dy;
+      this.move(dx * move * len, dy * move * len);
+      this.bobPhase += dt * 8;
+    } else {
+      if (this.bobPhase > 0) this.bobPhase = Math.max(0, this.bobPhase - dt * 6);
     }
-    if (Input.isBackward()) {
-      this.move(-this.dirX * move, -this.dirY * move);
-    }
-    if (Input.isStrafeLeft()) {
-      this.move(-this.dirY * move, this.dirX * move);
-    }
-    if (Input.isStrafeRight()) {
-      this.move(this.dirY * move, -this.dirX * move);
-    }
+
+    this.bobOffset = Math.sin(this.bobPhase) * 2;
   },
 };

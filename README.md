@@ -9,7 +9,7 @@ A diferencia de los MMO tradicionales, este proyecto busca la descentralización
 *    **Objetivo Inicial**: Crear la base técnica: movimiento, interacción con objetos, NPCs y gestión de atlas de tiles/sprites.
 
 ## 🎮 Experiencia de Juego
-*   **Motor Gráfico**: Renderizado 2D con técnica de **Raycasting** (estilo *Wolfenstein 3D*) implementado íntegramente en **Vanilla JavaScript**.
+*   **Motor Gráfico**: Híbrido **50% 2D top-down + 50% Raycasting pseudo-3D**. Mapas JSON definen el modo por instancia. Implementado íntegramente en **Vanilla JavaScript**.
 *   **Mecánicas Core**: 
     *   Sistema de movimiento y colisiones.
     *   Gestión de estados: Vida (HP), Maná (MP) y Estadísticas (Fuerza, Inteligencia, etc.).
@@ -32,7 +32,7 @@ El sitio se divide en dos grandes vertientes:
 ## 🚀 Tecnologías
 *   **Backend**: Node.js (Evolucionando hacia Express.js).
 *   **Frontend**: HTML5, CSS3, Vanilla JavaScript (Sin frameworks externos).
-*   **Gráficos**: Engine de Raycasting propio.
+*   **Gráficos**: Engine híbrido 2D top-down + Raycasting con mapas JSON autocontenidos.
 
 ## 📅 Roadmap / Próximos Hitos
 - [x] Estructura de carpetas inicial y servidor base.
