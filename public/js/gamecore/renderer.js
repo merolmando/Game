@@ -104,7 +104,8 @@ const Renderer = {
 
     const pulse = Math.sin(Date.now() / 400) * 0.15 + 0.35;
     for (const exit of map.exits || []) {
-      const info = map.tileColors[2];
+      const exitTileId = map.tiles[exit.tileY][exit.tileX];
+      const info = map.tileColors[exitTileId];
       const ex = Math.round(exit.tileX * ts - Camera.x);
       const ey = Math.round(exit.tileY * ts - Camera.y);
       ctx.fillStyle = info ? info.color : '#b8860b';

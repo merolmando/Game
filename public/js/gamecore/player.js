@@ -85,8 +85,8 @@ const Player = {
 
     if (this.moving) {
       const len = dx !== 0 && dy !== 0 ? 0.7071 : 1;
-      this.facingX = dx;
-      this.facingY = dy;
+      if (dx !== 0) { this.facingX = dx; this.facingY = 0; }
+      else { this.facingY = dy; this.facingX = 0; }
       this.move(dx * move * len, dy * move * len);
       this.bobPhase += dt * 8;
     } else {

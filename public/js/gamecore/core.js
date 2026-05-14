@@ -3,14 +3,14 @@ const Transition = {
   timer: 0,
   halfDuration: 0.5,
   phase: '',
-  onMidpoint: null,
+  loaded: false,
 
-  start(duration, onMidpoint) {
+  start(duration) {
     this.active = true;
     this.phase = 'fadeOut';
     this.timer = 0;
     this.halfDuration = duration / 2;
-    this.onMidpoint = onMidpoint;
+    this.loaded = false;
   },
 
   update(dt) {
@@ -18,9 +18,9 @@ const Transition = {
     this.timer += dt;
 
     if (this.phase === 'fadeOut' && this.timer >= this.halfDuration) {
+      if (!this.loaded) return;
       this.phase = 'fadeIn';
       this.timer = 0;
-      if (this.onMidpoint) this.onMidpoint();
     } else if (this.phase === 'fadeIn' && this.timer >= this.halfDuration) {
       this.active = false;
       this.phase = '';
@@ -57,15 +57,16 @@ async function loadMap(path) {
   } else {
     Player.dirX = data.playerStart.dirX || 1;
     Player.dirY = data.playerStart.dirY || 0;
-    Player.planeX = 0;
-    Player.planeY = 0.66;
+    const fov = 0.66;
+    Player.planeX = -Player.dirY * fov;
+    Player.planeY = Player.dirX * fov;
   }
   Player.spawnTimer = 0.3;
   Camera.x = 0;
   Camera.y = 0;
 }
 
-function gameLoop(timestamp) {
+async function gameLoop(timestamp) {
   const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
   lastTime = timestamp;
 
@@ -82,12 +83,12 @@ function gameLoop(timestamp) {
 
     if (Player.spawnTimer > 0) {
       Player.spawnTimer -= dt;
-    } else {
+    } else if (Player.spawnTimer <= 0) {
       const exit = Map.checkExits(Player.x, Player.y);
       if (exit) {
-        Transition.start(1.0, async () => {
-          await loadMap(exit.target);
-        });
+        Transition.start(1.0);
+        await loadMap(exit.target);
+        Transition.loaded = true;
       }
     }
   }
