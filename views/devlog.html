@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tierra Media - Devlog</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="logo">Tierra Media</a>
+    <ul class="nav-links">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/juego">Juego</a></li>
+      <li><a href="/desarrollo">Desarrollo</a></li>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/devlog" class="active">Devlog</a></li>
+      <li><a href="/hitos">Hitos</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1>Devlog</h1>
+    <p>Registro cronológico de cambios. Cada entrada se añade sin modificar las anteriores.</p>
+
+    <article class="entry">
+      <h2>2026-05-15 — Estructura inicial y servidor base</h2>
+      <p>Configuración del proyecto Node.js, servidor HTTP con rutas para vistas y assets estáticos. Creación de la estructura de carpetas (<code>public/</code>, <code>src/</code>, <code>views/</code>) y maquetado inicial de páginas.</p>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Refinamiento del README y visión del proyecto</h2>
+      <p>Actualización completa del <code>README.md</code> para reflejar la arquitectura de MMO descentralizado por nodos, motor de Raycasting pseudo-3D en Vanilla JS, sistema de estadísticas (HP, MP, STR, INT), y división entre vista pública y herramientas de desarrollo. Se definió el roadmap con 4 hitos principales.</p>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Fase 0 y 1: Limpieza y estructura web completa</h2>
+      <p><strong>Fase 0:</strong> Eliminación de archivo huérfano <code>index.html</code> en la raíz, actualización de <code>package.json</code> (main, scripts start/dev, description).</p>
+      <p><strong>Fase 1:</strong> Implementación de sistema de rutas en el servidor (<code>/</code>, <code>/juego</code>, <code>/desarrollo</code>, <code>/devlog</code>, <code>/hitos</code>) mapeando a <code>views/</code>. Creación de las 5 vistas HTML con navegación consistente. CSS completo con tema oscuro, layout responsive, cards, hero, minimapa de hitos. JS base del cliente para resaltado de página activa.</p>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — GameCore: Motor de juego con Raycasting</h2>
+      <p>Creación del motor de juego completo en <code>public/js/gamecore/</code> con 7 módulos:</p>
+      <ul>
+        <li><strong>core.js</strong> — Bucle principal con <code>requestAnimationFrame</code>, delta time y contador de FPS.</li>
+        <li><strong>input.js</strong> — Captura de teclado (WASD, flechas, Q/E para strafe) con prevención de scroll.</li>
+        <li><strong>map.js</strong> — Grid 2D del mundo (16x10) con 3 tipos de tile y detección de colisiones.</li>
+        <li><strong>player.js</strong> — Jugador con posición, vector dirección, stats (HP, MP, STR, INT) y wall sliding.</li>
+        <li><strong>raycaster.js</strong> — Algoritmo DDA (Digital Differential Analyzer) a 640 rayos por frame.</li>
+        <li><strong>renderer.js</strong> — Pipeline de dibujado: cielo, suelo, paredes con sombreado y minimapa.</li>
+        <li><strong>sprite.js</strong> — Cargador de atlas de sprites con Promise.</li>
+      </ul>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Comentarios en GameCore</h2>
+      <p>Se añadieron comentários explicativos en español a los 7 archivos del motor (<code>gamecore/*.js</code>) detallando la función de cada sección, variable, método y algoritmo (DDA, wall sliding, delta time, pipeline de renderizado).</p>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — README del GameCore</h2>
+      <p>Creación de <code>public/js/gamecore/README.md</code> (269 líneas) con documentación técnica completa: estructura de archivos, flujo de ejecución, API de cada módulo, explicación del algoritmo DDA paso a paso, sistema de colisiones, delta time, y guías de extensión para tiles, sprites y red multijugador.</p>
+    </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Páginas de documentación (Docs)</h2>
+      <p>Se añadieron las rutas <code>/docs</code> y <code>/docs/gamecore</code> al servidor. Creación de <code>views/docs.html</code> con renderizador de markdown propio (sin dependencias externas) que fetchea y renderiza los READMEs. El parser soporta headers, lists, tablas, code blocks, inline formatting y blockquotes. Se actualizó la navbar de todas las páginas con el enlace "Docs".</p>
+    </article>
+  </main>
+
+  <footer>
+    <p>Proyecto Tierra Media — MMO Descentralizado</p>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

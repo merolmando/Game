@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tierra Media - Juego</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="logo">Tierra Media</a>
+    <ul class="nav-links">
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/juego" class="active">Juego</a></li>
+      <li><a href="/desarrollo">Desarrollo</a></li>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/devlog">Devlog</a></li>
+      <li><a href="/hitos">Hitos</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1>Juego</h1>
+    <p>El motor de juego se cargará aquí. Próximamente: renderizado 2D con Raycasting, movimiento del personaje, objetos y NPCs.</p>
+    <canvas id="gameCanvas"></canvas>
+  </main>
+
+  <footer>
+    <p>Proyecto Tierra Media — MMO Descentralizado</p>
+  </footer>
+
+  <script src="/js/gamecore/input.js"></script>
+  <script src="/js/gamecore/map.js"></script>
+  <script src="/js/gamecore/player.js"></script>
+  <script src="/js/gamecore/raycaster.js"></script>
+  <script src="/js/gamecore/renderer.js"></script>
+  <script src="/js/gamecore/sprite.js"></script>
+  <script src="/js/gamecore/core.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
