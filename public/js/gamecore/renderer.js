@@ -13,7 +13,8 @@ const Renderer = {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, SCREEN_W, SCREEN_H);
 
-    this.mode = Map.current ? Map.current.mode : '2d';
+    if (!Map.current) return;
+    this.mode = Map.current.mode;
 
     if (this.mode === 'ray') {
       Raycaster.cast(this.rays, player);

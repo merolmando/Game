@@ -34,6 +34,6 @@
     "3": { "color": "#2e6da4", "name": "Agua", "solid": true }
   },
   "exits": [
-    { "tileX": 23, "tileY": 1, "target": "cueva.json", "spawnX": 1.5, "spawnY": 1.5 }
+    { "tileX": 23, "tileY": 1, "target": "/maps/cueva.json", "spawnX": 1.5, "spawnY": 1.5 }
   ]
 }

@@ -23,6 +23,6 @@
     "2": { "color": "#6b4c8a", "name": "Pared magica", "solid": true }
   },
   "exits": [
-    { "tileX": 1, "tileY": 1, "target": "inicio.json", "spawnX": 23.5, "spawnY": 2.5 }
+    { "tileX": 1, "tileY": 1, "target": "/maps/inicio.json", "spawnX": 23.5, "spawnY": 2.5 }
   ]
 }
