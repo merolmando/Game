@@ -99,9 +99,11 @@ Punto de entrada del motor. Arranca el game loop y gestiona las transiciones ent
 - `fps` — contador de fotogramas por segundo (actualizado cada 1s)
 
 **`Transition`**: Sistema de fade out/in:
-- `start(duration, onMidpoint)` → inicia fade out. En la mitad (`onMidpoint`) carga el nuevo mapa y empieza fade in.
+- `start(duration)` → inicia fade out. Crea el flag `loaded = false`.
+- `update(dt)` → avanza el timer. Al llegar a la mitad del duration, espera a que `loaded === true` antes de pasar a fadeIn. Esto sincroniza la transición con la carga asíncrona del mapa.
 - `getAlpha()` → devuelve opacidad actual (0-1) para el overlay negro.
 - Curva: `easeInQuad` para fade out, `easeOutQuad` para fade in.
+- **Flujo completo:** `Transition.start(1.0)` → `loadMap(path).then(() => Transition.loaded = true)` — el RAF cycle nunca se interrumpe porque la carga usa `.then()` en vez de `await`.
 
 **`loadMap(path)`**: Carga un JSON de mapa, reposiciona al jugador y resetea la cámara.
 
@@ -134,10 +136,10 @@ Carga mapas desde JSON y expone consultas de tiles, colisiones y salidas.
 **Métodos de `Map`:**
 | Método | Descripción |
 |--------|-------------|
-| `load(path)` | Fetch + parse del JSON. Almacena en `this.current` |
+| `load(path)` | Fetch + parse del JSON. Valida HTTP (<code>if (!res.ok)</code>) y lanza error si falla. Almacena en `this.current` |
 | `getTile(x, y)` | Devuelve el ID del tile en coordenadas float. Fuera de rango → 1 |
 | `isSolid(x, y)` | `true` si el tile tiene `solid: true` en `tileColors`. Por defecto `true` |
-| `checkExits(px, py)` | Busca una salida en la posición del jugador. Devuelve el exit o `null` |
+| `checkExits(px, py)` | Busca una salida en la posición del jugador (<code>Math.floor(px + 0.5)</code> para centrar en tile). Devuelve el exit o `null` |
 
 **Propiedades de `Map.current`:**
 - `name`, `mode`, `width`, `height`, `tileSize`
@@ -216,9 +218,10 @@ Bifurca según `Map.current.mode`.
 
 **Método `render(player)`:**
 1. Limpia canvas
-2. Si `mode === "ray"`: raycaster + cielo/suelo/paredes/minimapa
-3. Si `mode === "2d"`: `draw2D()`
-4. Siempre: `drawTransition()`
+2. Si `Map.current === null`, retorna sin dibujar (evita crash tras error de carga)
+3. Si `mode === "ray"`: raycaster + cielo/suelo/paredes/minimapa
+4. Si `mode === "2d"`: `draw2D()`
+5. Siempre: `drawTransition()`
 
 **`draw2D(ctx, player)`:**
 1. Actualiza cámara centrada en el jugador

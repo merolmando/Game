@@ -83,6 +83,20 @@
         <li>El raycaster existente se mantiene intacto para los mapas en modo <code>ray</code>.</li>
       </ul>
     </article>
+
+    <article class="entry">
+      <h2>2026-05-15 — Corrección de bugs y estabilización del motor</h2>
+      <p>Ronda de fixes tras detectar errores en producción durante el testeo del modo 2D y la transición entre mapas:</p>
+      <ul>
+        <li><strong>Camera plane dinámico</strong> — <code>planeX/planeY</code> se calculan rotando el vector dirección del jugador en vez de estar hardcodeados a <code>(0, 0.66)</code>. Esto permite que mapas ray con dirección de spawn distinta tengan el FOV correcto.</li>
+        <li><strong>Race condition en transición</strong> — El <code>await loadMap()</code> dentro del game loop suspendía el ciclo de <code>requestAnimationFrame</code>, congelando la animación de fade. Reemplazado por <code>.then()</code> para que el RAF cycle nunca se interrumpa y la transición se reproduzca fluidamente.</li>
+        <li><strong>Facing diagonal corregido</strong> — En modo 2D, al presionar dos teclas simultáneamente (ej: W+A) la dirección facing prioriza un eje cardinal (horizontal primero) en vez de apuntar en diagonal.</li>
+        <li><strong>Brillo de puerta dinámico</strong> — El color del brillo pulsante de las puertas ahora se lee del tile real en la posición de salida (<code>map.tiles[exit.tileY][exit.tileX]</code>), no del ID hardcodeado 2. Funciona con cualquier tile que actúe como puerta.</li>
+        <li><strong>Rutas absolutas en exits</strong> — Los <code>target</code> de los JSON ahora usan rutas absolutas (<code>/maps/cueva.json</code>) para que el fetch funcione independientemente de la URL base de la página.</li>
+        <li><strong>Error handling en Map.load</strong> — Validación HTTP (<code>if (!res.ok)</code>) que lanza un error descriptivo en vez de intentar parsear HTML de error 404 como JSON.</li>
+        <li><strong>Guard null en renderer</strong> — <code>render()</code> retorna temprano si <code>Map.current === null</code> para evitar un crash en cascada (<code>Cannot read properties of null</code>) tras un error de carga de mapa.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>
