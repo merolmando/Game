@@ -24,20 +24,6 @@
     <p>Registro cronológico de cambios. Cada entrada se añade sin modificar las anteriores.</p>
 
     <article class="entry">
-      <h2>2026-05-15 — Renumeración de tiles: 0 = vacío, capas en mapas</h2>
-      <p><strong>Problema:</strong> El tile ID 0 se usaba tanto para "pasto" (tile válido con sprite) como para "vacío" (sin tile), causando que la capa <code>terreno</code> no renderizara nada porque <code>drawLayer</code> salta los tiles con valor 0.</p>
-      <p><strong>Solución:</strong> Renumeración completa de IDs en <code>inicio.json</code> y <code>cueva.json</code>:</p>
-      <ul>
-        <li><strong>Tile 0</strong> = vacío (siempre transitable, nunca se renderiza)</li>
-        <li><strong>Tile 1</strong> = pasto (era 0)</li>
-        <li><strong>Tile 2</strong> = pared_piedra (era 1)</li>
-        <li><strong>Tile 3</strong> = puerta (era 2)</li>
-        <li><strong>Tile 4</strong> = agua (era 3)</li>
-      </ul>
-      <p><strong>Fix en <code>map.js</code>:</strong> <code>isSolid()</code> ahora retorna <code>false</code> para tile 0 (vacío), ya que al quitar <code>tileSprites["0"]</code> el default <code>return true</code> trataría el espacio vacío como sólido. No se tocó el render.</p>
-    </article>
-
-    <article class="entry">
       <h2>2026-05-15 — Estructura inicial y servidor base</h2>
       <p>Configuración del proyecto Node.js, servidor HTTP con rutas para vistas y assets estáticos. Creación de la estructura de carpetas (<code>public/</code>, <code>src/</code>, <code>views/</code>) y maquetado inicial de páginas.</p>
     </article>
@@ -123,6 +109,19 @@
         <li><strong>Sub-navegación</strong> tipo docs con enlaces a <code>/hitos</code>, <code>/hitos/actual</code> y <code>/hitos/tareas</code>.</li>
         <li><strong>Nuevos estilos</strong> en <code>style.css</code>: barras de progreso, sub-nav activa, subtasks con estado, tarjetas de tareas con indicador de prioridad.</li>
       </ul>
+    </article>
+    <article class="entry">
+      <h2>2026-05-15 — Renumeración de tiles: 0 = vacío, capas en mapas</h2>
+      <p><strong>Problema:</strong> El tile ID 0 se usaba tanto para "pasto" (tile válido con sprite) como para "vacío" (sin tile), causando que la capa <code>terreno</code> no renderizara nada porque <code>drawLayer</code> salta los tiles con valor 0.</p>
+      <p><strong>Solución:</strong> Renumeración completa de IDs en <code>inicio.json</code> y <code>cueva.json</code>:</p>
+      <ul>
+        <li><strong>Tile 0</strong> = vacío (siempre transitable, nunca se renderiza)</li>
+        <li><strong>Tile 1</strong> = pasto (era 0)</li>
+        <li><strong>Tile 2</strong> = pared_piedra (era 1)</li>
+        <li><strong>Tile 3</strong> = puerta (era 2)</li>
+        <li><strong>Tile 4</strong> = agua (era 3)</li>
+      </ul>
+      <p><strong>Fix en <code>map.js</code>:</strong> <code>isSolid()</code> ahora retorna <code>false</code> para tile 0 (vacío), ya que al quitar <code>tileSprites["0"]</code> el default <code>return true</code> trataría el espacio vacío como sólido. No se tocó el render.</p>
     </article>
   </main>
 
