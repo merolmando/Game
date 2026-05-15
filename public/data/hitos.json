@@ -1,0 +1,72 @@
+{
+  "milestones": [
+    {
+      "id": "fase-0",
+      "title": "Fase 0 — Base del proyecto",
+      "description": "Estructura de carpetas, servidor, enrutamiento de páginas.",
+      "status": "done",
+      "progress": 100,
+      "tasks": [
+        { "title": "Configurar estructura del proyecto", "status": "done" },
+        { "title": "Implementar servidor HTTP", "status": "done" },
+        { "title": "Crear sistema de rutas", "status": "done" },
+        { "title": "Estilos globales y navegación", "status": "done" }
+      ]
+    },
+    {
+      "id": "hito-1",
+      "title": "Hito 1 — El Núcleo",
+      "description": "Plantilla de personaje, movimiento básico, atlas de tiles y sprites.",
+      "status": "in-progress",
+      "progress": 35,
+      "tasks": [
+        { "title": "Diseñar plantilla de personaje", "status": "done" },
+        { "title": "Crear atlas de tiles", "status": "done" },
+        { "title": "Implementar movimiento básico", "status": "in-progress" },
+        { "title": "Sistema de sprites del jugador", "status": "pending" },
+        { "title": "Cargar mapas desde JSON", "status": "done" },
+        { "title": "Cámara y viewport", "status": "in-progress" },
+        { "title": "Detección de colisiones", "status": "pending" },
+        { "title": "Transiciones entre mapas", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-2",
+      "title": "Hito 2 — Interacción",
+      "description": "Objetos básicos y NPCs con IA simple.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "Sistema de objetos interactuables", "status": "pending" },
+        { "title": "IA simple para NPCs", "status": "pending" },
+        { "title": "Diálogos básicos", "status": "pending" },
+        { "title": "Objetos recolectables", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-3",
+      "title": "Hito 3 — Atributos",
+      "description": "Sistema de estadísticas (HP, MP, STR, INT) e inventario.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "Sistema de estadísticas del jugador", "status": "pending" },
+        { "title": "Inventario y gestión de objetos", "status": "pending" },
+        { "title": "Sistema de combate básico", "status": "pending" },
+        { "title": "Experiencia y nivelación", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-4",
+      "title": "Hito 4 — Herramientas",
+      "description": "Editor de mapas y DevTools.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "Editor de mapas visual", "status": "pending" },
+        { "title": "Panel de depuración", "status": "pending" },
+        { "title": "Consola de comandos de desarrollo", "status": "pending" }
+      ]
+    }
+  ]
+}

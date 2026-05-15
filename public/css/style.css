@@ -201,3 +201,303 @@ footer {
   color: #8b949e;
   font-size: 0.9rem;
 }
+
+.milestones li.in-progress {
+  border-color: #1f6feb;
+}
+
+.milestones li.in-progress strong::before {
+  content: '▶ ';
+  color: #1f6feb;
+}
+
+.mini-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.mini-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #21262d;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: #1f6feb;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.mini-progress-text {
+  font-size: 0.8rem;
+  color: #8b949e;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.sub-nav {
+  margin: 0.5rem 0 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sub-nav a {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #c9d1d9;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.sub-nav a:hover {
+  background: #30363d;
+  color: #f0e6d0;
+}
+
+.sub-nav a.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+}
+
+.section-content {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #8b949e;
+  font-size: 1.1rem;
+}
+
+.error-msg {
+  text-align: center;
+  padding: 3rem;
+  color: #f85149;
+}
+
+.current-milestone-header {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.current-milestone-header h2 {
+  color: #f0e6d0;
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.milestone-desc {
+  color: #8b949e;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.progress-section {
+  margin-bottom: 0.5rem;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #c9d1d9;
+  margin-bottom: 0.4rem;
+}
+
+.progress-pct {
+  color: #1f6feb;
+  font-weight: bold;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #21262d;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1f6feb, #58a6ff);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.subtasks-section {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.subtasks-section h3 {
+  color: #f0e6d0;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.subtasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.subtask {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.subtask.done {
+  border-color: #238636;
+}
+
+.subtask.in-progress {
+  border-color: #1f6feb;
+}
+
+.subtask.pending {
+  border-color: #21262d;
+}
+
+.subtask-icon {
+  font-size: 1rem;
+  width: 1.2rem;
+  text-align: center;
+}
+
+.subtask.done .subtask-icon { color: #238636; }
+.subtask.in-progress .subtask-icon { color: #1f6feb; }
+.subtask.pending .subtask-icon { color: #484f58; }
+
+.subtask.done .subtask-title { color: #8b949e; text-decoration: line-through; }
+.subtask.in-progress .subtask-title { color: #f0e6d0; }
+.subtask.pending .subtask-title { color: #8b949e; }
+
+.milestone-summary {
+  text-align: center;
+  padding: 0.8rem;
+  color: #8b949e;
+  font-size: 0.9rem;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.tasks-header {
+  margin-bottom: 1rem;
+}
+
+.tasks-header p {
+  color: #8b949e;
+}
+
+.task-group {
+  margin-bottom: 1.5rem;
+}
+
+.task-group h3 {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid;
+}
+
+.task-group h3.priority-alta { color: #f85149; border-color: #f85149; }
+.task-group h3.priority-media { color: #d29922; border-color: #d29922; }
+.task-group h3.priority-baja { color: #238636; border-color: #238636; }
+
+.task-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.task-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.2s;
+}
+
+.task-card:hover {
+  border-color: #58a6ff;
+}
+
+.task-card.priority-alta { border-left: 3px solid #f85149; }
+.task-card.priority-media { border-left: 3px solid #d29922; }
+.task-card.priority-baja { border-left: 3px solid #238636; }
+
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.task-card-header h4 {
+  color: #f0e6d0;
+  font-size: 0.95rem;
+}
+
+.task-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.status-pending { background: #21262d; color: #8b949e; }
+.status-in-progress { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+.status-done { background: #23863622; color: #3fb950; border: 1px solid #23863655; }
+
+.task-desc {
+  color: #8b949e;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #484f58;
+}
+
+.task-notes {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #8b949e;
+  background: #0d1117;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}

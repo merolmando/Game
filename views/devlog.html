@@ -24,6 +24,19 @@
     <p>Registro cronológico de cambios. Cada entrada se añade sin modificar las anteriores.</p>
 
     <article class="entry">
+      <h2>2026-05-15 — Sub-páginas de Hitos: progreso y tareas JSON</h2>
+      <p>Se agregaron dos sub-páginas a la sección de hitos con datos cargados desde archivos JSON externos:</p>
+      <ul>
+        <li><strong><code>/hitos/actual</code></strong> — Vista del hito en curso con barra de progreso general, lista de sub-tareas con estado (pendiente/en-progreso/completada) y resumen de avance.</li>
+        <li><strong><code>/hitos/tareas</code></strong> — Panel de tareas inmediatas de desarrollo agrupadas por prioridad (alta/media/baja), con descripción, esfuerzo estimado y notas.</li>
+        <li><strong><code>public/data/hitos.json</code></strong> — Datos externalizados: 5 hitos con sub-tareas y progreso porcentual.</li>
+        <li><strong><code>public/data/tareas.json</code></strong> — 10 tareas de desarrollo con prioridad, estado, esfuerzo y notas.</li>
+        <li><strong>Sub-navegación</strong> tipo docs con enlaces a <code>/hitos</code>, <code>/hitos/actual</code> y <code>/hitos/tareas</code>.</li>
+        <li><strong>Nuevos estilos</strong> en <code>style.css</code>: barras de progreso, sub-nav activa, subtasks con estado, tarjetas de tareas con indicador de prioridad.</li>
+      </ul>
+    </article>
+
+    <article class="entry">
       <h2>2026-05-15 — Estructura inicial y servidor base</h2>
       <p>Configuración del proyecto Node.js, servidor HTTP con rutas para vistas y assets estáticos. Creación de la estructura de carpetas (<code>public/</code>, <code>src/</code>, <code>views/</code>) y maquetado inicial de páginas.</p>
     </article>

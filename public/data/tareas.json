@@ -1,0 +1,94 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Terminar movimiento básico del jugador",
+      "description": "Implementar las 8 direcciones de movimiento y animación del sprite.",
+      "priority": "alta",
+      "status": "in-progress",
+      "effort": "6h",
+      "notes": "Usar el sistema de input ya definido en input.js"
+    },
+    {
+      "id": 2,
+      "title": "Sistema de cámara con seguimiento",
+      "description": "La cámara debe seguir al jugador suavemente por el mapa.",
+      "priority": "alta",
+      "status": "in-progress",
+      "effort": "4h",
+      "notes": "Ver camera.js - límites del mapa"
+    },
+    {
+      "id": 3,
+      "title": "Detección de colisiones con tiles",
+      "description": "El jugador no debe atravesar paredes ni tiles sólidos.",
+      "priority": "alta",
+      "status": "pending",
+      "effort": "5h",
+      "notes": "Implementar colisión basada en el mapa JSON (capa de colisiones)"
+    },
+    {
+      "id": 4,
+      "title": "Transiciones entre mapas",
+      "description": "Al llegar al borde de un mapa, cargar el siguiente mapa.",
+      "priority": "media",
+      "status": "pending",
+      "effort": "3h",
+      "notes": "Definir puntos de transición en el JSON del mapa"
+    },
+    {
+      "id": 5,
+      "title": "Sistema de sprites animados",
+      "description": "Cargar y renderizar sprites con animaciones desde el atlas.",
+      "priority": "media",
+      "status": "pending",
+      "effort": "4h",
+      "notes": "El atlas de tiles ya está definido en sprite.js"
+    },
+    {
+      "id": 6,
+      "title": "Refactorizar el bucle del juego",
+      "description": "Separar update y render en bucles independientes con delta time.",
+      "priority": "media",
+      "status": "pending",
+      "effort": "3h",
+      "notes": "Revisar core.js - desacoplar lógica"
+    },
+    {
+      "id": 7,
+      "title": "Diseñar mapa de cueva",
+      "description": "Completar el diseño del mapa cueva.json con zonas y transiciones.",
+      "priority": "baja",
+      "status": "pending",
+      "effort": "2h",
+      "notes": "Usar el formato de tiles definido en COLORES.md"
+    },
+    {
+      "id": 8,
+      "title": "Escribir pruebas de movimiento",
+      "description": "Probar que el jugador se mueve correctamente en los 4 mapas cardinales.",
+      "priority": "baja",
+      "status": "pending",
+      "effort": "2h",
+      "notes": "Probar colisiones, bordes de mapa y transiciones"
+    },
+    {
+      "id": 9,
+      "title": "Documentar el sistema de mapas",
+      "description": "Escribir documentación técnica del formato de mapas JSON.",
+      "priority": "baja",
+      "status": "pending",
+      "effort": "1.5h",
+      "notes": "Incluir ejemplos de tiles, capas y objetos"
+    },
+    {
+      "id": 10,
+      "title": "Optimizar renderizado 2D",
+      "description": "Solo renderizar tiles visibles en la ventana (frustum culling).",
+      "priority": "baja",
+      "status": "pending",
+      "effort": "4h",
+      "notes": "Usar la cámara para determinar qué tiles están en pantalla"
+    }
+  ]
+}

@@ -15,36 +15,34 @@
       <li><a href="/desarrollo">Desarrollo</a></li>
       <li><a href="/docs">Docs</a></li>
       <li><a href="/devlog">Devlog</a></li>
-      <li><a href="/hitos" class="active">Hitos</a></li>
+      <li><a href="/hitos">Hitos</a></li>
     </ul>
   </nav>
 
   <main>
-    <h1>Hitos</h1>
-    <p>Etapas del desarrollo y progreso del proyecto.</p>
+    <h1 id="pageTitle">Hitos</h1>
 
-    <ul class="milestones">
-      <li class="done">
-        <strong>Fase 0 — Base del proyecto</strong>
-        <span>Estructura de carpetas, servidor, enrutamiento de páginas.</span>
-      </li>
-      <li class="pending">
-        <strong>Hito 1 — El Núcleo</strong>
-        <span>Plantilla de personaje, movimiento básico, atlas de tiles y sprites.</span>
-      </li>
-      <li class="pending">
-        <strong>Hito 2 — Interacción</strong>
-        <span>Objetos básicos y NPCs con IA simple.</span>
-      </li>
-      <li class="pending">
-        <strong>Hito 3 — Atributos</strong>
-        <span>Sistema de estadísticas (HP, MP, STR, INT) e inventario.</span>
-      </li>
-      <li class="pending">
-        <strong>Hito 4 — Herramientas</strong>
-        <span>Editor de mapas y DevTools.</span>
-      </li>
-    </ul>
+    <nav class="sub-nav">
+      <a href="/hitos">Todos los Hitos</a>
+      <a href="/hitos/actual">Hito Actual</a>
+      <a href="/hitos/tareas">Tareas</a>
+    </nav>
+
+    <div id="section-hitos" class="section-content">
+      <p>Etapas del desarrollo y progreso del proyecto.</p>
+      <ul class="milestones" id="milestonesList"></ul>
+    </div>
+
+    <div id="section-actual" class="section-content" style="display:none">
+      <div id="currentMilestone"></div>
+    </div>
+
+    <div id="section-tareas" class="section-content" style="display:none">
+      <div class="tasks-header">
+        <p>Tareas inmediatas de desarrollo para el programador principal.</p>
+      </div>
+      <div id="tasksList"></div>
+    </div>
   </main>
 
   <footer>
@@ -52,5 +50,141 @@
   </footer>
 
   <script src="/js/main.js"></script>
+  <script>
+    (function() {
+      const path = window.location.pathname;
+
+      document.querySelectorAll('.sub-nav a').forEach(a => {
+        if (a.getAttribute('href') === path) a.classList.add('active');
+      });
+
+      document.querySelectorAll('#section-hitos, #section-actual, #section-tareas').forEach(s => s.style.display = 'none');
+
+      if (path === '/hitos/actual') {
+        document.getElementById('section-actual').style.display = 'block';
+        document.getElementById('pageTitle').textContent = 'Hito Actual';
+        loadCurrentMilestone();
+      } else if (path === '/hitos/tareas') {
+        document.getElementById('section-tareas').style.display = 'block';
+        document.getElementById('pageTitle').textContent = 'Tareas Inmediatas';
+        loadTasks();
+      } else {
+        document.getElementById('section-hitos').style.display = 'block';
+        document.getElementById('pageTitle').textContent = 'Hitos';
+        loadMilestones();
+      }
+
+      function loadMilestones() {
+        const list = document.getElementById('milestonesList');
+        list.innerHTML = '<div class="loading">Cargando hitos...</div>';
+
+        fetch('/data/hitos.json')
+          .then(r => { if (!r.ok) throw new Error('Error al cargar hitos'); return r.json(); })
+          .then(data => {
+            list.innerHTML = '';
+            data.milestones.forEach(m => {
+              const li = document.createElement('li');
+              li.className = m.status === 'done' ? 'done' : (m.status === 'in-progress' ? 'in-progress' : 'pending');
+              li.innerHTML = '<strong>' + m.title + '</strong><span>' + m.description + '</span>';
+              if (m.status === 'in-progress') {
+                const bar = document.createElement('div');
+                bar.className = 'mini-progress';
+                bar.innerHTML = '<div class="mini-progress-bar"><div class="mini-progress-fill" style="width:' + m.progress + '%"></div></div><span class="mini-progress-text">' + m.progress + '%</span>';
+                li.appendChild(bar);
+              }
+              list.appendChild(li);
+            });
+          })
+          .catch(err => {
+            list.innerHTML = '<div class="error-msg">' + err.message + '</div>';
+          });
+      }
+
+      function loadCurrentMilestone() {
+        const container = document.getElementById('currentMilestone');
+        container.innerHTML = '<div class="loading">Cargando hito actual...</div>';
+
+        fetch('/data/hitos.json')
+          .then(r => { if (!r.ok) throw new Error('Error al cargar datos'); return r.json(); })
+          .then(data => {
+            const current = data.milestones.find(m => m.status === 'in-progress');
+            if (!current) {
+              container.innerHTML = '<div class="error-msg">No hay un hito en progreso actualmente.</div>';
+              return;
+            }
+
+            let html = '';
+            html += '<div class="current-milestone-header">';
+            html += '<h2>' + current.title + '</h2>';
+            html += '<p class="milestone-desc">' + current.description + '</p>';
+            html += '<div class="progress-section">';
+            html += '<div class="progress-label"><span>Progreso general</span><span class="progress-pct">' + current.progress + '%</span></div>';
+            html += '<div class="progress-bar"><div class="progress-fill" style="width:' + current.progress + '%"></div></div>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="subtasks-section"><h3>Sub-tareas</h3>';
+            html += '<div class="subtasks-list">';
+            current.tasks.forEach(t => {
+              const cls = t.status === 'done' ? 'subtask done' : (t.status === 'in-progress' ? 'subtask in-progress' : 'subtask pending');
+              const icon = t.status === 'done' ? '✓' : (t.status === 'in-progress' ? '▶' : '○');
+              html += '<div class="' + cls + '"><span class="subtask-icon">' + icon + '</span><span class="subtask-title">' + t.title + '</span></div>';
+            });
+            html += '</div></div>';
+
+            const doneCount = current.tasks.filter(t => t.status === 'done').length;
+            const totalCount = current.tasks.length;
+            html += '<div class="milestone-summary">' + doneCount + ' de ' + totalCount + ' sub-tareas completadas</div>';
+
+            container.innerHTML = html;
+          })
+          .catch(err => {
+            container.innerHTML = '<div class="error-msg">' + err.message + '</div>';
+          });
+      }
+
+      function loadTasks() {
+        const container = document.getElementById('tasksList');
+        container.innerHTML = '<div class="loading">Cargando tareas...</div>';
+
+        fetch('/data/tareas.json')
+          .then(r => { if (!r.ok) throw new Error('Error al cargar tareas'); return r.json(); })
+          .then(data => {
+            container.innerHTML = '';
+
+            const priorities = ['alta', 'media', 'baja'];
+            const priorityLabels = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+
+            priorities.forEach(p => {
+              const filtered = data.tasks.filter(t => t.priority === p);
+              if (filtered.length === 0) return;
+
+              let html = '<div class="task-group">';
+              html += '<h3 class="priority-' + p + '">Prioridad ' + priorityLabels[p] + '</h3>';
+              html += '<div class="task-cards">';
+
+              filtered.forEach(t => {
+                const statusLabels = { 'pending': 'Pendiente', 'in-progress': 'En Progreso', 'done': 'Completada' };
+                html += '<div class="task-card priority-' + p + '">';
+                html += '<div class="task-card-header"><h4>' + t.title + '</h4>';
+                html += '<span class="task-status status-' + t.status + '">' + statusLabels[t.status] + '</span></div>';
+                html += '<p class="task-desc">' + t.description + '</p>';
+                html += '<div class="task-meta"><span>⏱ ' + t.effort + '</span></div>';
+                if (t.notes) {
+                  html += '<div class="task-notes">📝 ' + t.notes + '</div>';
+                }
+                html += '</div>';
+              });
+
+              html += '</div></div>';
+              container.innerHTML += html;
+            });
+          })
+          .catch(err => {
+            container.innerHTML = '<div class="error-msg">' + err.message + '</div>';
+          });
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -25,6 +25,8 @@ const ROUTES = {
   '/desarrollo': 'desarrollo.html',
   '/devlog': 'devlog.html',
   '/hitos': 'hitos.html',
+  '/hitos/actual': 'hitos.html',
+  '/hitos/tareas': 'hitos.html',
   '/docs': 'docs.html',
   '/docs/gamecore': 'docs.html',
 };
