@@ -54,7 +54,7 @@ public/maps/
 
 ## 🗺️ Formato de Mapas JSON
 
-Cada mapa se define en un archivo JSON en `public/maps/`. Ejemplo:
+Cada mapa se define en un archivo JSON en `public/maps/`. Ejemplo (formato con capas):
 
 ```json
 {
@@ -64,15 +64,27 @@ Cada mapa se define en un archivo JSON en `public/maps/`. Ejemplo:
   "height": 20,
   "tileSize": 32,
   "playerStart": { "x": 12, "y": 15, "dirX": 0, "dirY": -1 },
-  "tiles": [[...]],
+  "layers": {
+    "cielo": { "type": "solid", "color": "#1a1a2e" },
+    "terreno": [[1,1,1,...]],
+    "mundo": [[2,0,0,...]],
+    "personajes": [[0,0,0,...]],
+    "eventos": [[0,0,0,...]]
+  },
+  "tileSprites": {
+    "1": "pasto",
+    "2": "pared_piedra",
+    "3": "puerta",
+    "4": "agua"
+  },
   "tileColors": {
-    "0": { "color": "#4a7c3f", "name": "Pasto", "solid": false },
-    "1": { "color": "#5c4033", "name": "Pared", "solid": true },
-    "2": { "color": "#b8860b", "name": "Puerta / Transicion", "solid": false },
-    "3": { "color": "#2e6da4", "name": "Agua", "solid": true }
+    "1": { "color": "#4a7c3f", "name": "Pasto", "solid": false },
+    "2": { "color": "#5c4033", "name": "Pared", "solid": true },
+    "3": { "color": "#b8860b", "name": "Puerta / Transicion", "solid": false },
+    "4": { "color": "#2e6da4", "name": "Agua", "solid": true }
   },
   "exits": [
-    { "tileX": 23, "tileY": 1, "target": "cueva.json", "spawnX": 1.5, "spawnY": 1.5 }
+    { "tileX": 23, "tileY": 1, "target": "/maps/cueva.json", "spawnX": 1.5, "spawnY": 1.5 }
   ]
 }
 ```
@@ -82,8 +94,12 @@ Cada mapa se define en un archivo JSON en `public/maps/`. Ejemplo:
 | `mode` | `"2d"` o `"ray"` — define el pipeline de renderizado |
 | `tileSize` | Tamaño en píxeles de cada tile (solo afecta modo 2D) |
 | `playerStart` | Posición inicial y dirección del jugador |
+| `layers` | Objeto con 5 capas: `cielo` (config) + `terreno`, `mundo`, `personajes`, `eventos` (grids 2D). Cada capa se renderiza en orden y el ID `0` significa "vacío" |
+| `tileSprites` | Mapa de ID tile → entityId del atlas de sprites (`public/entidades/`) |
 | `tileColors` | Mapa de ID → color, nombre y si es sólido (colisionable) |
 | `exits` | Lista de salidas: tile de activación, mapa destino y spawn |
+
+Mapas legacy con `tiles[][]` en vez de `layers` siguen funcionando (backward compat). El motor detecta si existe `current.layers` y, si no, usa `current.tiles` como capa `'mundo'`.
 
 ---
 
@@ -202,8 +218,9 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 | Método | Parámetros | Retorno | Descripción |
 |--------|-----------|---------|-------------|
 | `load(path)` | `path: string` — ruta al JSON (ej: `/maps/inicio.json`) | `Promise<object>` — datos parseados | Fetch + validación HTTP (`if (!res.ok)` lanza error). Setea `this.current` con los datos |
-| `getTile(x, y)` | `x, y: number` — coordenadas float (pueden tener decimales) | `number` — ID del tile (0-255) | Convierte a enteros con `Math.floor()`. Si está fuera de los límites del mapa, retorna `1` (sólido por defecto) |
-| `isSolid(x, y)` | `x, y: number` — coordenadas float | `boolean` | Consulta `tileColors[id].solid`. Si el tile ID no está en `tileColors`, asume `true` (colisionable) |
+| `getTile(x, y, layer)` | `x, y: number` — coordenadas float; `layer: string` — nombre de capa (`'mundo'` por defecto) | `number` — ID del tile (0-255) | Convierte a enteros con `Math.floor()`. Si está fuera de los límites del mapa o la capa no existe, retorna `1` (sólido por defecto) |
+| `getGrid(layer)` | `layer: string` — nombre de capa | `number[][] \| null` | Retorna el grid 2D de una capa. Para `cielo` retorna el objeto de configuración. Si la capa no existe o el mapa es legacy, retorna `null` |
+| `isSolid(x, y)` | `x, y: number` — coordenadas float | `boolean` | Consulta la capa `'mundo'`. Si ID=0 retorna `false` (vacío). Si el ID tiene `tileSprites`, consulta `entity.solid`. Si no, consulta `tileColors[id].solid`. Si no hay configuración, asume `true` |
 | `checkExits(px, py)` | `px, py: number` — posición del jugador en coordenadas float | `object \| null` | Centra al tile con `Math.floor(px + 0.5)`. Itera `exits[]` y devuelve el primero que coincida, o `null` si no hay salida en esa posición |
 
 **Estructura de `Map.current` (objeto cargado):**
@@ -214,9 +231,22 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 | `width`, `height` | `number` | Dimensiones del grid en tiles |
 | `tileSize` | `number` | Píxeles por tile (solo afecta modo 2D) |
 | `playerStart` | `object` | `{ x, y, dirX, dirY }` — spawn point y dirección inicial |
-| `tiles` | `number[][]` | Grid 2D: `tiles[fila][columna]` = ID del tile |
-| `tileColors` | `object` | `{ [id]: { color, name, solid } }` — configuración por ID |
+| `layers` | `object` | 5 capas: `cielo` (config `{type, color}`) + `terreno`, `mundo`, `personajes`, `eventos` (grids `number[][]`). ID 0 = vacío en todas |
+| `tileSprites` | `object` | `{ [id]: string }` — mapea ID de tile a entityId del atlas (`public/entidades/`) |
+| `tileColors` | `object` | `{ [id]: { color, name, solid } }` — configuración por ID (fallback si no hay sprite) |
 | `exits` | `object[]` | `[{ tileX, tileY, target, spawnX, spawnY }]` — transiciones a otros mapas |
+| `tiles` | `number[][]` | (legacy) Grid 2D de tiles planos. Solo presente en mapas sin `layers` |
+
+**Sistema de capas:**
+```
+Orden de render: Cielo → Terreno → Mundo → Personajes → Eventos (invisible/datos)
+- cielo:    Configuración de color sólido para el cielo (drawSky/drawCeiling)
+- terreno:  Suelo/base visual del mapa (ID 1 = pasto)
+- mundo:    Paredes y objetos sólidos (ID 2+). El raycaster y isSolid usan esta capa
+- personajes: NPCs y jugadores (ID 0 = vacío, reservado para futuros personajes)
+- eventos:  Zonas de trigger, spawns, etc. (ID 0 = vacío)
+```
+Mapas legacy con `tiles[][]` en vez de `layers` siguen funcionando: el motor usa `tiles` como capa `'mundo'`.
 
 **Dependencias:** ninguna
 
@@ -393,37 +423,36 @@ Bifurca entre pipeline 2D top-down y pipeline de raycaster pseudo-3D según `Map
 |--------|-----------|---------|-------------|
 | `init(canvas)` | `canvas: HTMLCanvasElement` | `void` | Guarda referencia al canvas y su contexto 2D, setea `width/height = SCREEN_W/SCREEN_H`, prealoca `rays[]` |
 | `render(player)` | `player: Player` | `void` | Pipeline principal: limpia canvas, si `Map.current === null` retorna (guard contra crash), según `mode` delega a ray pipeline o `draw2D()`, y siempre dibuja `drawTransition()` |
-| `drawCeiling(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad superior de la pantalla con `#1a1a2e` (cielo oscuro) |
+| `drawCeiling(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad superior. Lee color desde `layers.cielo.color` si existe; fallback a `#1a1a2e` |
 | `drawFloor(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad inferior con `#2d2d44` (suelo) |
-| `drawWalls(ctx, player)` | `ctx, player` | `void` | Itera `rays[]`: por cada columna, obtiene el `tileColors` del `tileType` golpeado, aplica sombra (`side===1` → factor 0.6), dibuja una línea vertical de 1px de ancho desde `drawStart` hasta `drawEnd` |
-| `drawMinimap(ctx, player)` | `ctx, player` | `void` | Dibuja minimapa en esquina inferior izquierda (escala 4px/tile). Pinta todos los tiles con sus colores. Marca al jugador como círculo rojo con línea de dirección |
-| `draw2D(ctx, player)` | `ctx, player` | `void` | Pipeline 2D completo: actualiza cámara, hace viewport culling (solo tiles visibles), dibuja tiles con `tileColors`, dibuja puertas con brillo pulsante (`rgba(255,215,0, pulso)` donde `pulso = sin(Date.now()/400)*0.15+0.35`), dibuja jugador como cuadrado `#4a9eff` de 20×20 con línea de dirección blanca y offset de bob vertical |
+| `drawWalls(ctx, player)` | `ctx, player` | `void` | Itera `rays[]`: por cada columna, obtiene el `tileType` golpeado. Si hay `tileSprites[type]` y el atlas está cargado, samplea 1px del atlas (`drawImage` escalado a altura de pared) con sombra por `globalAlpha` según `side`. Si no, usa `tileColors[type].color` con `shadeColor()` |
+| `drawMinimap(ctx, player)` | `ctx, player` | `void` | Dibuja minimapa en esquina inferior izquierda (escala 4px/tile) usando la capa `'mundo'`. Pinta todos los tiles con sus colores. Marca al jugador como círculo rojo con línea de dirección |
+| `drawSky(ctx)` | `ctx` | `void` | Rellena todo el canvas con `layers.cielo.color` (o `#1a1a2e` fallback). Se llama al inicio de `draw2D()` |
+| `drawLayer(ctx, layerName)` | `ctx, layerName` | `void` | Dibuja una capa del mapa con viewport culling. Para cada tile visible: si tiene `tileSprites[id]` dibuja el sprite del atlas (con animación si frames > 1). Si no, usa `tileColors[id].color`. Tile ID 0 se salta (vacío) |
+| `draw2D(ctx, player)` | `ctx, player` | `void` | Pipeline 2D: `drawSky()` → `drawLayer('terreno')` → `drawLayer('mundo')` → exits con brillo pulsante → jugador con sprite del atlas (o cuadrado azul fallback) + línea de dirección + bob |
 | `drawTransition(ctx)` | `ctx` | `void` | Dibuja overlay negro semitransparente sobre toda la pantalla con alpha de `Transition.getAlpha()`. Si alpha es 0, no dibuja nada |
 | `shadeColor(hex, factor)` | `hex: string` (ej `#4a7c3f`), `factor: number` (0-1) | `string` — color RGB | Parsea hex a RGB, multiplica cada canal por `factor`, clamp a 255. Ej: `shadeColor('#ff8800', 0.6)` → `'rgb(153,81,0)'` |
 
 **Pipeline ray (`drawCeiling + drawFloor + drawWalls + drawMinimap`):**
 ```
-1. drawCeiling: rectángulo lleno en mitad superior
+1. drawCeiling: rectángulo lleno en mitad superior (color desde layers.cielo)
 2. drawFloor:   rectángulo lleno en mitad inferior
 3. drawWalls:   itera 640 rayos, dibuja una columna vertical por rayo
-                → color base desde tileColors[id]
-                → si side === 1, oscurece 40% (factor 0.6)
-4. drawMinimap: grid 4px/tile + jugador como punto rojo
+                → sprite del atlas si hay tileSprites[type], sino color sólido
+                → texturizado: samplea 1px del atlas escalado a la altura de pared
+                → si side === 1, oscurece con globalAlpha 0.6
+4. drawMinimap: grid 4px/tile desde capa 'mundo' + jugador como punto rojo
 ```
 
 **Pipeline 2D (`draw2D`):**
 ```
 1. Camera.update(player.x * ts, player.y * ts, mapPixelW, mapPixelH)
-2. Calcular rango visible de tiles (startCol/Row, endCol/Row)
-3. Para cada tile visible:
-   - Obtener color de tileColors[id]
-   - Dibujar rect en (col*ts - cam.x, row*ts - cam.y)
-4. Para cada exit:
-   - Dibujar tile de salida con su color
-   - Superponer brillo pulsante dorado
-5. Dibujar jugador:
-   - Cuadrado azul 20×20 centrado en (player.x*ts - cam.x, player.y*ts - cam.y + bobOffset)
-   - Línea blanca desde el centro hacia (facingX*16, facingY*16)
+2. drawSky() — cielo sólido desde layers.cielo
+3. drawLayer('terreno') — suelo/base (ID 1 = pasto, sprite del atlas)
+4. drawLayer('mundo') — paredes y objetos (ID 2+ del atlas)
+5. Exits: tile sprite + brillo pulsante dorado (rgba(255,215,0, pulse))
+6. Jugador: sprite del atlas (player) o cuadrado azul 20×20 fallback
+            + línea de dirección blanca + offset bob vertical
 ```
 
 **Dependencias:** `Map`, `Raycaster`, `Camera`, `Transition`

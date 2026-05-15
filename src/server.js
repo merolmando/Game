@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { build: buildAtlas } = require('../tools/build-atlas');
 
 const PORT = 3000;
 const PUBLIC_DIR = path.join(__dirname, '../public');
@@ -23,6 +24,7 @@ const ROUTES = {
   '/': 'index.html',
   '/juego': 'juego.html',
   '/desarrollo': 'desarrollo.html',
+  '/desarrollo/herramientas': 'desarrollo.html',
   '/devlog': 'devlog.html',
   '/hitos': 'hitos.html',
   '/hitos/actual': 'hitos.html',
@@ -35,6 +37,10 @@ const ROOT_DIR = path.join(__dirname, '..');
 
 const FILE_ROUTES = {
   '/README.md': path.join(ROOT_DIR, 'README.md'),
+};
+
+const TOOL_ROUTES = {
+  '/desarrollo/herramientas/inspector-mapa': path.join(PUBLIC_DIR, 'devtools/inspector-mapa/index.html'),
 };
 
 function serveFile(res, filePath, contentType) {
@@ -67,6 +73,10 @@ const server = http.createServer((req, res) => {
     return serveFile(res, FILE_ROUTES[url], MIME_TYPES[ext] || 'text/plain');
   }
 
+  if (TOOL_ROUTES[url]) {
+    return serveFile(res, TOOL_ROUTES[url], 'text/html');
+  }
+
   const filePath = path.join(PUBLIC_DIR, url);
   const ext = path.extname(filePath);
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -74,6 +84,11 @@ const server = http.createServer((req, res) => {
   serveFile(res, filePath, contentType);
 });
 
-server.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}/`);
+buildAtlas().then(() => {
+  server.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}/`);
+  });
+}).catch(err => {
+  console.error('Error al construir el atlas:', err);
+  process.exit(1);
 });

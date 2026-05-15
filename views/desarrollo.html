@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tierra Media - Desarrollo</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/devtools/devtools.css">
 </head>
 <body>
   <nav class="navbar">
@@ -20,29 +21,37 @@
   </nav>
 
   <main>
-    <h1>Desarrollo</h1>
+    <h1 id="pageTitle">Desarrollo</h1>
 
-    <section>
-      <h2>Documentación Técnica</h2>
-      <p>Plan de desarrollo detallado del motor de Raycasting, sistema de nodos descentralizado, y componentes del juego.</p>
-      <ul>
-        <li>Arquitectura del servidor y rutas</li>
-        <li>Sistema de mapas basado en grid 2D</li>
-        <li>Algoritmo DDA para Raycasting</li>
-        <li>Gestión de atlas de tiles y sprites</li>
-        <li>Sistema de estadísticas (HP, MP, STR, INT)</li>
-      </ul>
-    </section>
+    <nav class="sub-nav">
+      <a href="/desarrollo">Documentación Técnica</a>
+      <a href="/desarrollo/herramientas">Herramientas</a>
+    </nav>
 
-    <section>
-      <h2>Herramientas de Desarrollo</h2>
+    <div id="section-docs" class="section-content">
+      <div id="docContainer" class="docs-content loading">Cargando documentación...</div>
+    </div>
+
+    <div id="section-tools" class="section-content" style="display:none">
       <p>Acceso a utilidades para creadores de contenido del juego.</p>
-      <ul>
-        <li>Editor de mapas (próximamente)</li>
-        <li>Visor de atlas de sprites (próximamente)</li>
-        <li>Consola de variables del juego (próximamente)</li>
-      </ul>
-    </section>
+      <div class="devtools-grid">
+        <div class="devtools-card">
+          <h3>Visor de Atlas</h3>
+          <p>Visualiza el atlas de sprites con todas las entidades registradas, sus coordenadas y frames.</p>
+          <span class="devtools-tag soon">Próximamente</span>
+        </div>
+        <a href="/desarrollo/herramientas/inspector-mapa" class="devtools-card" style="display:block; text-decoration:none">
+          <h3>Inspector de Mapas</h3>
+          <p>Carga y explora mapas JSON: grid de tiles, propiedades, salidas y colisiones.</p>
+          <span class="devtools-tag" style="background:#23863622;color:#3fb950;border:1px solid #23863655">Disponible</span>
+        </a>
+        <div class="devtools-card">
+          <h3>Consola de Desarrollo</h3>
+          <p>Terminal interactiva para comandos de depuración y visualización de estado del juego.</p>
+          <span class="devtools-tag soon">Próximamente</span>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -50,5 +59,196 @@
   </footer>
 
   <script src="/js/main.js"></script>
+  <script>
+    (function() {
+      const path = window.location.pathname;
+
+      document.querySelectorAll('.sub-nav a').forEach(a => {
+        if (a.getAttribute('href') === path) a.classList.add('active');
+      });
+
+      document.querySelectorAll('#section-docs, #section-tools').forEach(s => s.style.display = 'none');
+
+      if (path === '/desarrollo/herramientas') {
+        document.getElementById('section-tools').style.display = 'block';
+        document.getElementById('pageTitle').textContent = 'Herramientas';
+      } else {
+        document.getElementById('section-docs').style.display = 'block';
+        document.getElementById('pageTitle').textContent = 'Documentación Técnica';
+        loadDocs();
+      }
+
+      function loadDocs() {
+        const container = document.getElementById('docContainer');
+
+        Promise.all([
+          fetch('/README.md').then(r => { if (!r.ok) throw new Error('README.md'); return r.text(); }),
+          fetch('/js/gamecore/README.md').then(r => { if (!r.ok) throw new Error('gamecore/README.md'); return r.text(); }),
+        ])
+          .then(([readme, gamecoreReadme]) => {
+            const combined = '# Proyecto Tierra Media\n\n' + readme + '\n\n---\n\n' + gamecoreReadme;
+            container.className = 'docs-content';
+            container.innerHTML = renderMarkdown(combined);
+          })
+          .catch(err => {
+            container.className = 'error-msg';
+            container.innerHTML = '<h2>Error</h2><p>No se pudo cargar: ' + err.message + '</p>';
+          });
+      }
+
+      function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function renderMarkdown(md) {
+        const lines = md.split('\n');
+        let html = '';
+        let i = 0;
+        let inCodeBlock = false;
+        let codeBuffer = [];
+        let codeLang = '';
+        let inTable = false;
+        let tableBuffer = [];
+        let inList = false;
+        let listType = '';
+        let listBuffer = [];
+
+        while (i < lines.length) {
+          const line = lines[i];
+
+          if (/^```/.test(line)) {
+            if (inCodeBlock) {
+              html += '<pre><code' + (codeLang ? ' class="language-' + codeLang + '"' : '') + '>' + escapeHtml(codeBuffer.join('\n')) + '</code></pre>\n';
+              codeBuffer = [];
+              codeLang = '';
+              inCodeBlock = false;
+              i++;
+              continue;
+            } else {
+              inCodeBlock = true;
+              codeLang = line.slice(3).trim();
+              i++;
+              continue;
+            }
+          }
+
+          if (inCodeBlock) {
+            codeBuffer.push(line);
+            i++;
+            continue;
+          }
+
+          if (inTable && !/^\|/.test(line)) {
+            html += renderTable(tableBuffer);
+            tableBuffer = [];
+            inTable = false;
+          }
+
+          if (inList && !/^(\s*[-*+]\s|\s*\d+\.\s)/.test(line) && line.trim() !== '') {
+            html += renderList(listType, listBuffer);
+            listBuffer = [];
+            inList = false;
+            listType = '';
+          }
+
+          if (line.trim() === '') {
+            if (inList) listBuffer.push({ type: 'gap' });
+            i++;
+            continue;
+          }
+
+          if (/^---+\s*$/.test(line)) {
+            html += '<hr>\n';
+            i++;
+            continue;
+          }
+
+          const hMatch = line.match(/^(#{1,6})\s+(.+)$/);
+          if (hMatch) {
+            html += '<h' + hMatch[1].length + '>' + renderInline(hMatch[2]) + '</h' + hMatch[1].length + '>\n';
+            i++;
+            continue;
+          }
+
+          if (/^\|.+\|$/.test(line)) {
+            inTable = true;
+            tableBuffer.push(line);
+            i++;
+            continue;
+          }
+
+          const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
+          if (ulMatch) {
+            if (!inList) { inList = true; listType = 'ul'; }
+            listBuffer.push({ type: 'item', text: ulMatch[2], indent: ulMatch[1].length });
+            i++;
+            continue;
+          }
+
+          const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+          if (olMatch) {
+            if (!inList) { inList = true; listType = 'ol'; }
+            listBuffer.push({ type: 'item', text: olMatch[2], indent: olMatch[1].length });
+            i++;
+            continue;
+          }
+
+          if (/^>\s/.test(line)) {
+            html += '<blockquote>' + renderInline(line.replace(/^>\s?/, '')) + '</blockquote>\n';
+            i++;
+            continue;
+          }
+
+          let para = '';
+          while (i < lines.length && lines[i].trim() !== '' && !/^#{1,6}\s/.test(lines[i]) && !/^---+\s*$/.test(lines[i]) && !/^\|.+\|$/.test(lines[i]) && !/^```/.test(lines[i]) && !/^(\s*)[-*+]\s/.test(lines[i]) && !/^(\s*)\d+\.\s/.test(lines[i])) {
+            para += (para ? ' ' : '') + lines[i].trim();
+            i++;
+          }
+          if (para) html += '<p>' + renderInline(para) + '</p>\n';
+        }
+
+        if (inCodeBlock) html += '<pre><code>' + escapeHtml(codeBuffer.join('\n')) + '</code></pre>\n';
+        if (inTable) html += renderTable(tableBuffer);
+        if (inList) html += renderList(listType, listBuffer);
+
+        return html;
+      }
+
+      function renderInline(text) {
+        text = escapeHtml(text);
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        return text;
+      }
+
+      function renderTable(rows) {
+        let html = '<table>\n';
+        for (let r = 0; r < rows.length; r++) {
+          const cells = rows[r].split('|').filter(c => c.trim() !== '');
+          if (cells.length > 0 && /^[-:\s]+$/.test(cells[0].trim())) continue;
+          const tag = r === 0 ? 'th' : 'td';
+          html += '  <tr>';
+          for (const cell of cells) html += '<' + tag + '>' + renderInline(cell.trim()) + '</' + tag + '>';
+          html += '</tr>\n';
+        }
+        html += '</table>\n';
+        return html;
+      }
+
+      function renderList(type, items) {
+        let html = '<' + type + '>\n';
+        for (const item of items) {
+          if (item.type === 'gap') html += '</' + type + '>\n<' + type + '>\n';
+          else html += '  <li>' + renderInline(item.text) + '</li>\n';
+        }
+        html += '</' + type + '>\n';
+        return html;
+      }
+    })();
+  </script>
 </body>
 </html>

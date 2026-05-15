@@ -34,9 +34,14 @@ El sitio se divide en dos grandes vertientes:
 *   **Frontend**: HTML5, CSS3, Vanilla JavaScript (Sin frameworks externos).
 *   **Gráficos**: Engine híbrido 2D top-down + Raycasting con mapas JSON autocontenidos.
 
-## 📅 Roadmap / Próximos Hitos
-- [x] Estructura de carpetas inicial y servidor base.
-- [ ] **Hito 1: El Núcleo**: Implementación de plantilla de personaje, movimiento básico y sistema de gestión de Atlas (Tiles & Sprites).
+## ✅ Estado Actual
+- [x] **Servidor base** con rutas, assets y vistas.
+- [x] **Motor GameCore**: Game loop, input, cámara 2D, raycaster DDA, renderer dual-mode (2D + ray), sistema de capas (cielo/terreno/mundo/personajes/eventos).
+- [x] **Atlas de sprites**: Sistema auto-generado desde `public/entidades/` con 5 entidades (player, pasto, pared_piedra, puerta, agua). Render texturizado en modo ray y 2D.
+- [x] **Mapas**: `inicio.json` (modo 2D) y `cueva.json` (modo ray) con capas y tile IDs donde 0 = vacío.
+- [x] **Transiciones**: Fade out/in entre mapas con carga asíncrona.
+- [x] **Herramientas**: `/desarrollo` con documentación técnica y `inspector-mapa` (editor visual paint de mapas con capas, paleta del atlas, zoom, grid).
+
+## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.
 - [ ] **Hito 3: Atributos**: Sistema de estadísticas (HP, MP, STR, INT) e inventario.
-- [ ] **Hito 4: Herramientas**: Lanzamiento de la subpágina de desarrolladores con editor de mapas.

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tierra Media - Inspector de Mapas</title>
+  <link rel="stylesheet" href="/devtools/devtools.css">
+  <link rel="stylesheet" href="/devtools/inspector-mapa/style.css">
+</head>
+<body class="tool-body">
+  <div class="tool-container">
+
+    <header class="tool-header">
+      <a href="/desarrollo/herramientas" class="tool-back">← Herramientas</a>
+      <h1>Inspector de Mapas</h1>
+      <div class="tool-actions">
+        <button id="btnNuevo" class="tool-btn">Nuevo</button>
+        <button id="btnAbrir" class="tool-btn">Abrir</button>
+        <button id="btnGuardar" class="tool-btn primary">Guardar</button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <label>Zoom:</label>
+        <button id="zoomOut" class="tool-btn-sm">−</button>
+        <span id="zoomLabel" class="toolbar-value">100%</span>
+        <button id="zoomIn" class="tool-btn-sm">+</button>
+      </div>
+      <div class="toolbar-group">
+        <label><input type="checkbox" id="chkGrid" checked> Grid</label>
+      </div>
+      <div class="toolbar-group">
+        <label>Modo:</label>
+        <select id="selModo">
+          <option value="2d">2D</option>
+          <option value="ray">Raycast</option>
+        </select>
+      </div>
+      <div id="mapInfo" class="toolbar-group">
+        <span id="mapSizeLabel">—</span>
+      </div>
+    </div>
+
+    <div class="tool-main">
+
+      <aside class="panel-left">
+        <h3>Paleta</h3>
+        <div id="paletteContainer" class="palette-grid"></div>
+        <div class="palette-info">
+          <div id="paletteColor" class="palette-swatch" style="background:#888"></div>
+          <div id="paletteName" class="palette-name">—</div>
+        </div>
+      </aside>
+
+      <section class="panel-center">
+        <div id="canvasWrapper" class="canvas-wrapper">
+          <canvas id="mapCanvas"></canvas>
+        </div>
+        <div class="layer-tabs" id="layerTabs">
+          <button class="layer-tab" data-layer="mundo">Mundo</button>
+          <button class="layer-tab" data-layer="terreno">Terreno</button>
+          <button class="layer-tab" data-layer="personajes">Personajes</button>
+          <button class="layer-tab" data-layer="eventos">Eventos</button>
+          <button class="layer-tab" data-layer="cielo">Cielo</button>
+          <div class="layer-controls">
+            <label><input type="checkbox" id="chkMostrarCielo" checked> Mostrar cielo</label>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel-right">
+        <h3>Propiedades</h3>
+        <div id="propContent">
+          <p class="muted">Selecciona un tile en el mapa</p>
+        </div>
+        <hr>
+        <h3>Exits</h3>
+        <div id="exitsContent">
+          <p class="muted">Sin salidas</p>
+        </div>
+        <button id="btnAddExit" class="tool-btn-sm" style="margin-top:0.5rem">+ Añadir Exit</button>
+      </aside>
+
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <h2 id="modalTitle">Nuevo Mapa</h2>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+          <button id="modalCancel" class="tool-btn">Cancelar</button>
+          <button id="modalOk" class="tool-btn primary">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/devtools/inspector-mapa/script.js"></script>
+</body>
+</html>

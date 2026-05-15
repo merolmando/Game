@@ -7,8 +7,16 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": ["mmo", "rpg", "raycasting", "game"],
+  "keywords": [
+    "mmo",
+    "rpg",
+    "raycasting",
+    "game"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
 }

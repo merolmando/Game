@@ -1,0 +1,139 @@
+.devtools-layout {
+  display: flex;
+  gap: 1rem;
+  min-height: 60vh;
+}
+
+.devtools-toolbar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+
+.devtools-toolbar h3 {
+  color: #f0e6d0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.devtools-toolbar ul {
+  list-style: none;
+}
+
+.devtools-toolbar li {
+  margin-bottom: 0.3rem;
+}
+
+.devtools-toolbar a {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #c9d1d9;
+  transition: background 0.15s;
+}
+
+.devtools-toolbar a:hover {
+  background: #21262d;
+  color: #f0e6d0;
+}
+
+.devtools-toolbar a.active {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.devtools-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.devtools-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.devtools-card h3 {
+  color: #f0e6d0;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.devtools-card p {
+  color: #8b949e;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.devtools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.devtools-grid .devtools-card {
+  margin-bottom: 0;
+}
+
+.devtools-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+  background: #21262d;
+  color: #8b949e;
+  margin-top: 0.3rem;
+}
+
+.devtools-tag.soon {
+  background: #1f6feb22;
+  color: #58a6ff;
+  border: 1px solid #1f6feb55;
+}
+
+.devtools-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.devtools-table th,
+.devtools-table td {
+  border: 1px solid #30363d;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.devtools-table th {
+  background: #21262d;
+  color: #f0e6d0;
+  font-weight: 600;
+}
+
+.devtools-table td {
+  color: #c9d1d9;
+}
+
+.devtools-table tr:hover td {
+  background: #1c2128;
+}
+
+.devtools-color-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+  border: 1px solid #30363d;
+}

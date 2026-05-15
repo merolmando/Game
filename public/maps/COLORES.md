@@ -4,22 +4,26 @@ Cada tile ID representa un tipo de celda en el mapa. Los colores son placeholder
 
 ---
 
-## 🟩 Tile 0 — Pasto (Verde `#4a7c3f`)
+## ⬛ Tile 0 — Vacío (Sin color)
+- **Transitable:** Sí
+- **Descripción:** Celda vacía en cualquier capa. No se renderiza y no bloquea el paso.
+
+## 🟩 Tile 1 — Pasto (Verde `#4a7c3f`)
 - **Transitable:** Sí
 - **Descripción:** Suelo estándar del mundo exterior. El jugador puede caminar libremente.
 - **Futuro:** Reemplazar por sprite de pasto con variaciones.
 
-## 🟫 Tile 1 — Pared (Marrón `#5c4033`)
+## 🟫 Tile 2 — Pared (Marrón `#5c4033`)
 - **Transitable:** No
 - **Descripción:** Pared del mapa. Bloquea el paso y activa colisiones.
 - **Futuro:** Reemplazar por sprites de pared según el bioma (piedra, madera, etc.).
 
-## 🟨 Tile 2 — Puerta / Transición (Dorado `#b8860b`)
+## 🟨 Tile 3 — Puerta / Transición (Dorado `#b8860b`)
 - **Transitable:** Sí
 - **Descripción:** Tile de salida. Al pisarlo se activa una transición visual (fade out/in) y se carga el mapa destino definido en `exits` del JSON.
 - **Futuro:** Animación de puerta con sprites.
 
-## 🟦 Tile 3 — Agua (Azul `#2e6da4`)
+## 🟦 Tile 4 — Agua (Azul `#2e6da4`)
 - **Transitable:** No
 - **Descripción:** Agua superficial. Bloquea el paso.
 - **Futuro:** Animación de ondas con sprites, posiblemente navegable con barca.

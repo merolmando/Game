@@ -1,0 +1,307 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; }
+
+.tool-body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.tool-header h1 { font-size: 1.1rem; color: #f0e6d0; flex: 1; }
+
+.tool-back {
+  font-size: 0.85rem;
+  color: #58a6ff;
+}
+.tool-back:hover { color: #79c0ff; }
+
+.tool-actions { display: flex; gap: 0.5rem; }
+
+.tool-btn {
+  padding: 0.4rem 1rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #c9d1d9;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.tool-btn:hover { background: #30363d; }
+.tool-btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.tool-btn.primary:hover { background: #388bfd; }
+.tool-btn-sm {
+  padding: 0.2rem 0.5rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.tool-btn-sm:hover { background: #30363d; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.4rem 1rem;
+  background: #0d1117;
+  border-bottom: 1px solid #30363d;
+  font-size: 0.85rem;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.toolbar-group label { color: #8b949e; }
+.toolbar-value { color: #f0e6d0; min-width: 3rem; text-align: center; }
+.toolbar-group select {
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+}
+.toolbar-group input[type="checkbox"] { accent-color: #1f6feb; }
+
+.tool-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panel-left {
+  width: 180px;
+  flex-shrink: 0;
+  background: #161b22;
+  border-right: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem;
+  overflow-y: auto;
+}
+
+.panel-left h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
+  margin-bottom: 0.5rem;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.palette-tile {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid #30363d;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.palette-tile:hover { border-color: #58a6ff; }
+.palette-tile.selected { border-color: #1f6feb; box-shadow: 0 0 0 1px #1f6feb; }
+.palette-tile .palette-id {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.6);
+  text-shadow: 0 0 2px #000;
+}
+
+.palette-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+  border-top: 1px solid #30363d;
+}
+
+.palette-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid #30363d;
+  flex-shrink: 0;
+}
+.palette-name { font-size: 0.8rem; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-wrapper {
+  flex: 1;
+  overflow: auto;
+  background: #0d1117;
+  position: relative;
+}
+
+#mapCanvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.layer-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  padding: 0;
+}
+
+.layer-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #30363d;
+  color: #8b949e;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.layer-tab:hover { background: #21262d; color: #c9d1d9; }
+.layer-tab.active { background: #1f6feb22; color: #58a6ff; border-bottom: 2px solid #1f6feb; }
+
+.layer-controls {
+  margin-left: auto;
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+.layer-controls input { accent-color: #1f6feb; }
+
+.panel-right {
+  width: 240px;
+  flex-shrink: 0;
+  background: #161b22;
+  border-left: 1px solid #30363d;
+  padding: 0.6rem;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.panel-right h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
+  margin-bottom: 0.4rem;
+}
+
+.panel-right hr {
+  border: none;
+  border-top: 1px solid #30363d;
+  margin: 0.6rem 0;
+}
+
+.prop-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+}
+.prop-row .prop-label { color: #8b949e; }
+.prop-row .prop-value { color: #f0e6d0; }
+
+.exit-card {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+.exit-card .exit-row { display: flex; justify-content: space-between; padding: 0.1rem 0; }
+.exit-card .exit-label { color: #8b949e; }
+.exit-card .exit-value { color: #c9d1d9; }
+.exit-card .exit-del {
+  color: #f85149;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.exit-card .exit-del:hover { text-decoration: underline; }
+
+.muted { color: #484f58; font-style: italic; font-size: 0.8rem; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 1.5rem;
+  min-width: 320px;
+  max-width: 450px;
+}
+
+.modal h2 { color: #f0e6d0; font-size: 1.1rem; margin-bottom: 1rem; }
+
+.modal-field {
+  margin-bottom: 0.8rem;
+}
+.modal-field label {
+  display: block;
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin-bottom: 0.2rem;
+}
+.modal-field input, .modal-field select {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  font-size: 0.85rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+select.tool-btn-sm { padding: 0.2rem 0.4rem; font-size: 0.8rem; }

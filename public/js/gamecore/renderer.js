@@ -30,7 +30,12 @@ const Renderer = {
   },
 
   drawCeiling(ctx) {
-    ctx.fillStyle = '#1a1a2e';
+    const sky = Map.current.layers ? Map.current.layers.cielo : null;
+    if (sky && sky.type === 'solid') {
+      ctx.fillStyle = sky.color;
+    } else {
+      ctx.fillStyle = '#1a1a2e';
+    }
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H / 2);
   },
 
@@ -40,24 +45,45 @@ const Renderer = {
   },
 
   drawWalls(ctx, player) {
+    const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
+
     for (let x = 0; x < this.rays.length; x++) {
       const ray = this.rays[x];
-      const info = Map.current.tileColors[ray.tileType];
-      const baseColor = info ? info.color : '#888';
-      const shade = ray.side === 1 ? 0.6 : 1;
-      ctx.fillStyle = this.shadeColor(baseColor, shade);
-      ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
+      const hasTileSprites = Map.current.tileSprites;
+      const entityId = hasTileSprites ? Map.current.tileSprites[ray.tileType] : null;
+      const sprite = entityId ? Sprite.getEntity(entityId) : null;
+
+      if (spriteAvailable && sprite) {
+        const texX = Math.floor(ray.wallX * sprite.frameW);
+        const shade = ray.side === 1 ? 0.6 : 1;
+        ctx.globalAlpha = shade;
+        ctx.drawImage(
+          Sprite.atlas,
+          sprite.x + texX, sprite.y, 1, sprite.frameH,
+          x, ray.drawStart, 1, ray.drawEnd - ray.drawStart
+        );
+        ctx.globalAlpha = 1;
+      } else {
+        const info = Map.current.tileColors[ray.tileType];
+        const baseColor = info ? info.color : '#888';
+        const shade = ray.side === 1 ? 0.6 : 1;
+        ctx.fillStyle = this.shadeColor(baseColor, shade);
+        ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
+      }
     }
   },
 
   drawMinimap(ctx, player) {
     const scale = 4;
     const offsetX = 10;
-    const offsetY = SCREEN_H - Map.current.height * scale - 10;
+    const offsetY = SCREEN_H - Map.getHeight() * scale - 10;
 
-    for (let y = 0; y < Map.current.height; y++) {
-      for (let x = 0; x < Map.current.width; x++) {
-        const tile = Map.current.tiles[y][x];
+    const grid = Map.getGrid('mundo');
+    if (!grid) return;
+
+    for (let y = 0; y < Map.getHeight(); y++) {
+      for (let x = 0; x < Map.getWidth(); x++) {
+        const tile = grid[y][x];
         const info = Map.current.tileColors[tile];
         ctx.fillStyle = info ? info.color : '#333';
         ctx.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale);
@@ -78,13 +104,23 @@ const Renderer = {
     ctx.stroke();
   },
 
-  draw2D(ctx, player) {
-    const map = Map.current;
-    const ts = map.tileSize;
-    const mapPixelW = map.width * ts;
-    const mapPixelH = map.height * ts;
+  drawSky(ctx) {
+    const sky = Map.current.layers ? Map.current.layers.cielo : null;
+    if (sky && sky.type === 'solid') {
+      ctx.fillStyle = sky.color;
+    } else {
+      ctx.fillStyle = '#1a1a2e';
+    }
+    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+  },
 
-    Camera.update(player.x * ts, player.y * ts, mapPixelW, mapPixelH);
+  drawLayer(ctx, layerName) {
+    const map = Map.current;
+    const grid = Map.getGrid(layerName);
+    if (!grid) return;
+
+    const ts = map.tileSize;
+    const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
 
     const startCol = Math.floor(Camera.x / ts);
     const startRow = Math.floor(Camera.y / ts);
@@ -94,41 +130,92 @@ const Renderer = {
     for (let row = startRow; row < endRow; row++) {
       for (let col = startCol; col < endCol; col++) {
         if (row < 0 || row >= map.height || col < 0 || col >= map.width) continue;
-        const tile = map.tiles[row][col];
-        const info = map.tileColors[tile];
+        const tile = grid[row][col];
+        if (tile === 0) continue;
+
         const sx = Math.round(col * ts - Camera.x);
         const sy = Math.round(row * ts - Camera.y);
-        ctx.fillStyle = info ? info.color : '#000';
-        ctx.fillRect(sx, sy, ts, ts);
+
+        let entityId = null;
+        if (map.tileSprites) entityId = map.tileSprites[tile];
+
+        if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
+          const info = Sprite.getEntity(entityId);
+          if (info.frames > 1) {
+            Sprite.drawAnim(ctx, entityId, sx, sy, ts, ts, this.dt || 0.016);
+          } else {
+            Sprite.draw(ctx, entityId, sx, sy, ts, ts, 0);
+          }
+        } else {
+          const info = map.tileColors ? map.tileColors[tile] : null;
+          ctx.fillStyle = info ? info.color : '#000';
+          ctx.fillRect(sx, sy, ts, ts);
+        }
       }
     }
+  },
+
+  draw2D(ctx, player) {
+    const map = Map.current;
+    const ts = map.tileSize;
+    const mapPixelW = map.width * ts;
+    const mapPixelH = map.height * ts;
+
+    Camera.update(player.x * ts, player.y * ts, mapPixelW, mapPixelH);
+
+    this.drawSky(ctx);
+    this.drawLayer(ctx, 'terreno');
+    this.drawLayer(ctx, 'mundo');
 
     const pulse = Math.sin(Date.now() / 400) * 0.15 + 0.35;
     for (const exit of map.exits || []) {
-      const exitTileId = map.tiles[exit.tileY][exit.tileX];
-      const info = map.tileColors[exitTileId];
       const ex = Math.round(exit.tileX * ts - Camera.x);
       const ey = Math.round(exit.tileY * ts - Camera.y);
-      ctx.fillStyle = info ? info.color : '#b8860b';
-      ctx.fillRect(ex, ey, ts, ts);
+
+      const exitTileId = Map.getTile(exit.tileX, exit.tileY, 'mundo');
+      let entityId = null;
+      if (map.tileSprites) entityId = map.tileSprites[exitTileId];
+
+      const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
+      if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
+        Sprite.drawAnim(ctx, entityId, ex, ey, ts, ts, 0.016);
+      } else {
+        const info = map.tileColors ? map.tileColors[exitTileId] : null;
+        ctx.fillStyle = info ? info.color : '#b8860b';
+        ctx.fillRect(ex, ey, ts, ts);
+      }
+
       ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
       ctx.fillRect(ex - 2, ey - 2, ts + 4, ts + 4);
     }
 
     const px = Math.round(player.x * ts - Camera.x);
     const py = Math.round(player.y * ts - Camera.y) + Math.round(player.bobOffset);
-    const halfSize = 10;
 
-    ctx.fillStyle = '#4a9eff';
-    ctx.fillRect(px - halfSize, py - halfSize, halfSize * 2, halfSize * 2);
+    const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
+    if (spriteAvailable && Sprite.getEntity('player')) {
+      const playerFrame = player.moving ? 1 + Math.floor(Date.now() / 200) % 3 : 0;
+      Sprite.draw(ctx, 'player', px - ts / 2, py - ts / 2, ts, ts, playerFrame);
 
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(px + player.facingX * 16, py + player.facingY * 16);
-    ctx.stroke();
-    ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + player.facingX * ts * 0.6, py + player.facingY * ts * 0.6);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    } else {
+      const halfSize = 10;
+      ctx.fillStyle = '#4a9eff';
+      ctx.fillRect(px - halfSize, py - halfSize, halfSize * 2, halfSize * 2);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + player.facingX * 16, py + player.facingY * 16);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
   },
 
   drawTransition(ctx) {

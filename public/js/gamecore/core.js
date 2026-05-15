@@ -99,12 +99,14 @@ async function gameLoop(timestamp) {
   }
 
   Transition.update(dt);
+  Renderer.dt = dt;
   Renderer.render(Player);
   requestAnimationFrame(gameLoop);
 }
 
 async function init() {
   await loadMap('/maps/inicio.json');
+  await Sprite.load();
   requestAnimationFrame(gameLoop);
 }
 

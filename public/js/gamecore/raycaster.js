@@ -57,7 +57,7 @@ const Raycaster = {
           mapY += stepY;
           side = 1;
         }
-        if (Map.getTile(mapX, mapY) > 0) hit = 1;
+        if (Map.getTile(mapX, mapY, 'mundo') > 0) hit = 1;
       }
 
       // Distancia perpendicular: evita el efecto "ojo de pez".
@@ -74,7 +74,16 @@ const Raycaster = {
       const drawEnd = Math.min(SCREEN_H - 1, lineHeight / 2 + SCREEN_H / 2);
 
       // Tipo de tile que golpeó el rayo (para el color de la pared).
-      const tileType = Map.getTile(mapX, mapY);
+      const tileType = Map.getTile(mapX, mapY, 'mundo');
+
+      // Coordenada horizontal exacta donde el rayo golpeó la pared (0-1).
+      let wallX;
+      if (side === 0) {
+        wallX = player.y + perpDist * rayDirY;
+      } else {
+        wallX = player.x + perpDist * rayDirX;
+      }
+      wallX -= Math.floor(wallX);
 
       rays[x] = {
         drawStart,
@@ -82,6 +91,7 @@ const Raycaster = {
         side,
         tileType,
         perpDist,
+        wallX,
       };
     }
   },
