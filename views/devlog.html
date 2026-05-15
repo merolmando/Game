@@ -123,6 +123,51 @@
       </ul>
       <p><strong>Fix en <code>map.js</code>:</strong> <code>isSolid()</code> ahora retorna <code>false</code> para tile 0 (vacío), ya que al quitar <code>tileSprites["0"]</code> el default <code>return true</code> trataría el espacio vacío como sólido. No se tocó el render.</p>
     </article>
+    <article class="entry">
+      <h2>2026-05-16 — Creador de Tiles, API REST y unificación de paleta</h2>
+      <p><strong>Creador de Tiles:</strong></p>
+      <ul>
+        <li>Herramienta completa de dibujo pixel-art en <code>/desarrollo/herramientas/creador-tiles</code>.</li>
+        <li>Pincel, goma, bote de pintura (flood fill) y gotero (eyedropper) con atajos de teclado (B/E/G/I).</li>
+        <li>Paleta de 16 colores predefinidos + selector HEX + color picker nativo.</li>
+        <li>Tamaño de lienzo configurable (4×4 a 128×128), zoom ajustable (+/- y scroll wheel).</li>
+        <li>Soporte para múltiples frames de animación con navegador de frames.</li>
+        <li>Preview en tiempo real a tamaño real.</li>
+        <li>Lista de entidades existentes con carga para edición y eliminación con confirmación.</li>
+        <li>Cache busting para evitar servir sprites viejos tras guardar.</li>
+      </ul>
+      <p><strong>API REST (servidor):</strong></p>
+      <ul>
+        <li><code>GET /api/entidades</code> — lista todas las entidades registradas.</li>
+        <li><code>POST /api/entidades</code> — crea/actualiza entidad con sprite en base64 + metadata, reconstruye el atlas automáticamente.</li>
+        <li><code>DELETE /api/entidades/{id}</code> — elimina una entidad y reconstruye el atlas.</li>
+        <li><code>GET /api/mapas</code> — lista mapas disponibles.</li>
+        <li><code>POST /api/mapas</code> — guarda un mapa en el servidor (reemplaza la descarga de Blob).</li>
+        <li><code>DELETE /api/mapas/{name}</code> — elimina un mapa.</li>
+        <li><code>POST /api/atlas/rebuild</code> — fuerza la reconstrucción del atlas.</li>
+      </ul>
+      <p><strong>Inspector de Mapas — mejoras:</strong></p>
+      <ul>
+        <li>Guardado via POST al servidor en vez de descargar JSON.</li>
+        <li>Modal "Abrir" con lista dinámica de mapas desde el servidor.</li>
+        <li>Feedback visual de guardado con fade out.</li>
+        <li>Cache busting en fetch de atlas y mapas.</li>
+      </ul>
+      <p><strong>Unificación de IDs de tiles:</strong></p>
+      <ul>
+        <li>Todos los mapas usan ahora la misma paleta del atlas global.</li>
+        <li><code>remapMapIds()</code> migra automáticamente IDs viejos al nuevo sistema al cargar mapas existentes.</li>
+        <li><code>syncTileMetadataFromAtlas()</code> unifica <code>tileColors</code> y <code>tileSprites</code> en todos los mapas.</li>
+        <li><code>cueva.json</code> migrado con <code>tileSprites</code> para compatibilidad.</li>
+      </ul>
+      <p><strong>Correcciones:</strong></p>
+      <ul>
+        <li>Fix 404 al seleccionar mapa del modal (colisión de campo <code>name</code> en API).</li>
+        <li>Fix <code>getCanvasCoords()</code> — ahora respeta <code>tileSize</code> variable del mapa.</li>
+        <li>Fix <code>resizeCanvas()</code> — fórmulas simplificadas, sin cálculos redundantes.</li>
+        <li>Fix <code>render()</code> — <code>cellPx</code> escala correctamente con <code>tileSize</code>.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

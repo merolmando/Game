@@ -61,6 +61,11 @@
     "2": { "color": "#c97b3a", "name": "Pared roca", "solid": true },
     "3": { "color": "#6b4c8a", "name": "Pared magica", "solid": true }
   },
+  "tileSprites": {
+    "1": "pasto",
+    "2": "pared_piedra",
+    "3": "pared_piedra"
+  },
   "exits": [
     { "tileX": 1, "tileY": 1, "target": "/maps/inicio.json", "spawnX": 23.5, "spawnY": 2.5 }
   ]

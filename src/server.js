@@ -6,6 +6,7 @@ const { build: buildAtlas } = require('../tools/build-atlas');
 const PORT = 3000;
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const VIEWS_DIR = path.join(__dirname, '../views');
+const ENTIDADES_DIR = path.join(PUBLIC_DIR, 'entidades');
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -41,6 +42,7 @@ const FILE_ROUTES = {
 
 const TOOL_ROUTES = {
   '/desarrollo/herramientas/inspector-mapa': path.join(PUBLIC_DIR, 'devtools/inspector-mapa/index.html'),
+  '/desarrollo/herramientas/creador-tiles': path.join(PUBLIC_DIR, 'devtools/creador-tiles/index.html'),
 };
 
 function serveFile(res, filePath, contentType) {
@@ -60,8 +62,182 @@ function serveFile(res, filePath, contentType) {
   });
 }
 
+function sendJson(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+function parseJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (e) {
+        reject(new Error('JSON inválido'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function listEntities() {
+  if (!fs.existsSync(ENTIDADES_DIR)) return [];
+  const entries = fs.readdirSync(ENTIDADES_DIR, { withFileTypes: true });
+  const result = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const entityPath = path.join(ENTIDADES_DIR, entry.name, 'entity.js');
+    const spritePath = path.join(ENTIDADES_DIR, entry.name, 'sprite.png');
+    if (fs.existsSync(entityPath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+        result.push({
+          id: entry.name,
+          ...data,
+          hasSprite: fs.existsSync(spritePath),
+        });
+      } catch (e) {
+        result.push({ id: entry.name, error: 'entity.js inválido' });
+      }
+    }
+  }
+  return result;
+}
+
+function saveEntity(entityId, entityData, spriteBase64) {
+  const dir = path.join(ENTIDADES_DIR, entityId);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  fs.writeFileSync(path.join(dir, 'entity.js'), JSON.stringify(entityData, null, 2));
+
+  if (spriteBase64) {
+    const base64Data = spriteBase64.replace(/^data:image\/png;base64,/, '');
+    fs.writeFileSync(path.join(dir, 'sprite.png'), Buffer.from(base64Data, 'base64'));
+  }
+}
+
+function deleteEntity(entityId) {
+  const dir = path.join(ENTIDADES_DIR, entityId);
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+const MAPS_DIR = path.join(PUBLIC_DIR, 'maps');
+
+function listMaps() {
+  if (!fs.existsSync(MAPS_DIR)) return [];
+  const files = fs.readdirSync(MAPS_DIR).filter(f => f.endsWith('.json') && f !== 'COLORES.md');
+  const result = [];
+  for (const file of files) {
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(MAPS_DIR, file), 'utf8'));
+      result.push({ fileId: file.replace('.json', ''), fileName: file, ...data });
+    } catch (e) {
+      result.push({ name: file.replace('.json', ''), fileName: file, error: 'JSON inválido' });
+    }
+  }
+  return result;
+}
+
+function saveMapFile(name, data) {
+  const filePath = path.join(MAPS_DIR, name + '.json');
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function deleteMapFile(name) {
+  const filePath = path.join(MAPS_DIR, name + '.json');
+  if (fs.existsSync(filePath)) {
+    fs.rmSync(filePath);
+  }
+}
+
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
+  const method = req.method;
+
+  if (method === 'GET' && url === '/api/entidades') {
+    return sendJson(res, 200, listEntities());
+  }
+
+  if (method === 'POST' && url === '/api/entidades') {
+    return parseJsonBody(req).then(async body => {
+      const { entityId, entityData, spriteBase64 } = body;
+      if (!entityId || !entityData) {
+        return sendJson(res, 400, { error: 'entityId y entityData son requeridos' });
+      }
+      try {
+        saveEntity(entityId, entityData, spriteBase64 || null);
+        await buildAtlas();
+        sendJson(res, 200, { ok: true, entityId });
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
+    }).catch(err => {
+      sendJson(res, 400, { error: err.message });
+    });
+  }
+
+  if (method === 'DELETE' && url.startsWith('/api/entidades/')) {
+    const entityId = url.replace('/api/entidades/', '');
+    if (!entityId) return sendJson(res, 400, { error: 'entityId requerido' });
+    if (!fs.existsSync(path.join(ENTIDADES_DIR, entityId))) {
+      return sendJson(res, 404, { error: 'Entidad no encontrada' });
+    }
+    deleteEntity(entityId);
+    buildAtlas().then(() => {
+      sendJson(res, 200, { ok: true, entityId });
+    });
+    return;
+  }
+
+  if (method === 'POST' && url === '/api/atlas/rebuild') {
+    buildAtlas().then(() => {
+      sendJson(res, 200, { ok: true });
+    }).catch(err => {
+      sendJson(res, 500, { error: err.message });
+    });
+    return;
+  }
+
+  if (method === 'GET' && url === '/api/mapas') {
+    return sendJson(res, 200, listMaps());
+  }
+
+  if (method === 'POST' && url === '/api/mapas') {
+    return parseJsonBody(req).then(async body => {
+      const { name, data } = body;
+      if (!name || !data) {
+        return sendJson(res, 400, { error: 'name y data son requeridos' });
+      }
+      try {
+        saveMapFile(name, data);
+        sendJson(res, 200, { ok: true, name });
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
+    }).catch(err => {
+      sendJson(res, 400, { error: err.message });
+    });
+  }
+
+  if (method === 'DELETE' && url.startsWith('/api/mapas/')) {
+    const mapName = url.replace('/api/mapas/', '');
+    if (!mapName) return sendJson(res, 400, { error: 'name requerido' });
+    const filePath = path.join(MAPS_DIR, mapName + '.json');
+    if (!fs.existsSync(filePath)) {
+      return sendJson(res, 404, { error: 'Mapa no encontrado' });
+    }
+    try {
+      deleteMapFile(mapName);
+      sendJson(res, 200, { ok: true, name: mapName });
+    } catch (err) {
+      sendJson(res, 500, { error: err.message });
+    }
+    return;
+  }
 
   if (ROUTES[url]) {
     const filePath = path.join(VIEWS_DIR, ROUTES[url]);

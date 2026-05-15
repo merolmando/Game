@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tierra Media - Creador de Tiles</title>
+  <link rel="stylesheet" href="/devtools/devtools.css">
+  <link rel="stylesheet" href="/devtools/creador-tiles/style.css">
+</head>
+<body class="tool-body">
+  <div class="tool-container">
+
+    <header class="tool-header">
+      <a href="/desarrollo/herramientas" class="tool-back">← Herramientas</a>
+      <h1>Creador de Tiles</h1>
+      <div class="tool-actions">
+        <span id="saveStatus" class="save-status"></span>
+        <button id="btnGuardar" class="tool-btn primary">Guardar</button>
+      </div>
+    </header>
+
+    <div class="tool-main">
+
+      <aside class="panel-left">
+        <section class="tool-section">
+          <h3>Herramientas</h3>
+          <div class="tools-grid">
+            <button id="toolPencil" class="tool-icon-btn active" title="Pincel (B)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+              <span>Pincel</span>
+            </button>
+            <button id="toolEraser" class="tool-icon-btn" title="Goma (E)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14.6 1.6c.8-.8 2-.8 2.8 0L21 5.6c.8.8.8 2 0 2.8L11 18"/><path d="m6 11 7 7"/></svg>
+              <span>Goma</span>
+            </button>
+            <button id="toolFill" class="tool-icon-btn" title="Bote de pintura (G)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h2v4h2v4h12v-4h2v-4h2"/><path d="M12 2v4"/><path d="M12 6 8 10h8Z"/></svg>
+              <span>Bote</span>
+            </button>
+            <button id="toolPicker" class="tool-icon-btn" title="Gotero (I)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 22 6-6"/><path d="M10.6 6.6 4.2 13l2.8 2.8 6.4-6.4c.8-.8.8-2 0-2.8l-1.4-1.4c-.8-.8-2-.8-2.8 0Z"/><path d="M16.2 9.2 21 4.4c.6-.6.6-1.6 0-2.2-.6-.6-1.6-.6-2.2 0L14 7"/></svg>
+              <span>Gotero</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h3>Color</h3>
+          <div id="colorPalette" class="color-palette"></div>
+          <div class="color-input-row">
+            <div id="currentColorSwatch" class="color-swatch"></div>
+            <input type="color" id="colorPicker" value="#ffffff">
+            <input type="text" id="colorHex" value="#ffffff" maxlength="7" class="color-hex-input">
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h3>Lienzo</h3>
+          <div class="canvas-size-row">
+            <label>Ancho</label>
+            <input type="number" id="canvasW" value="32" min="4" max="128" class="size-input">
+            <label>Alto</label>
+            <input type="number" id="canvasH" value="32" min="4" max="128" class="size-input">
+          </div>
+          <button id="btnApplySize" class="tool-btn-sm" style="width:100%;margin-top:0.3rem">Aplicar tamaño</button>
+        </section>
+
+        <section class="tool-section">
+          <h3>Zoom</h3>
+          <div class="zoom-row">
+            <button id="zoomOut" class="tool-btn-sm">−</button>
+            <span id="zoomLabel" class="zoom-value">800%</span>
+            <button id="zoomIn" class="tool-btn-sm">+</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel-center">
+        <div id="canvasWrapper" class="canvas-wrapper">
+          <canvas id="drawCanvas"></canvas>
+        </div>
+      </section>
+
+      <aside class="panel-right">
+        <section class="tool-section">
+          <h3>Propiedades</h3>
+          <div class="prop-field">
+            <label>Nombre (ID)</label>
+            <input type="text" id="propName" value="nuevo_tile" class="prop-input">
+          </div>
+          <div class="prop-field">
+            <label>Tipo</label>
+            <select id="propType" class="prop-select">
+              <option value="tile">Tile</option>
+              <option value="character">Personaje</option>
+            </select>
+          </div>
+          <div class="prop-field">
+            <label>
+              <input type="checkbox" id="propSolid">
+              Sólido
+            </label>
+          </div>
+          <div class="prop-field">
+            <label>Frames</label>
+            <input type="number" id="propFrames" value="1" min="1" max="16" class="prop-input">
+          </div>
+          <div class="prop-field">
+            <label>Vel. Animación</label>
+            <input type="number" id="propAnimSpeed" value="0" min="0" max="10" step="0.05" class="prop-input">
+          </div>
+          <div class="prop-field">
+            <label>Tamaño tile (px)</label>
+            <input type="number" id="propTileSize" value="32" min="4" max="128" class="prop-input">
+          </div>
+          <div class="prop-field frame-nav" id="frameNav" style="display:none">
+            <label>Frame</label>
+            <div class="frame-controls">
+              <button id="framePrev" class="tool-btn-sm">◀</button>
+              <span id="frameLabel">1 / 1</span>
+              <button id="frameNext" class="tool-btn-sm">▶</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h3>Preview</h3>
+          <div class="preview-container">
+            <canvas id="previewCanvas"></canvas>
+          </div>
+          <p id="previewSize" class="preview-size">32×32 px</p>
+        </section>
+
+        <section class="tool-section">
+          <h3>Entidades</h3>
+          <div class="entity-list" id="entityList">
+            <p class="muted">Cargando...</p>
+          </div>
+        </section>
+      </aside>
+
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <h2 id="modalTitle">Confirmar</h2>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+          <button id="modalCancel" class="tool-btn">Cancelar</button>
+          <button id="modalOk" class="tool-btn primary">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/devtools/creador-tiles/script.js"></script>
+</body>
+</html>

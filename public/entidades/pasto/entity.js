@@ -1,9 +1,9 @@
 {
   "type": "tile",
-  "name": "Pasto",
+  "name": "pasto",
   "solid": false,
   "frames": 1,
   "animSpeed": 0,
-  "defaultColor": "#4a7c3f",
-  "tileSize": 32
+  "tileSize": 32,
+  "defaultColor": "#4a7c3f"
 }
