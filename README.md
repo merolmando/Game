@@ -41,8 +41,10 @@ El sitio se divide en dos grandes vertientes:
 - [x] **Mapas**: `inicio.json` (modo 2D) y `cueva.json` (modo ray) con capas y tile IDs donde 0 = vacío.
 - [x] **Transiciones**: Fade out/in entre mapas con carga asíncrona.
 - [x] **API REST**: Endpoints para CRUD de entidades (`/api/entidades`) y mapas (`/api/mapas`) con persistencia en servidor y reconstrucción automática del atlas.
-- [x] **Creador de Tiles**: Editor pixel-art en `/desarrollo/herramientas/creador-tiles` con pincel, goma, bote, gotero, soporte multi-frame, preview en vivo y guardado directo al servidor.
-- [x] **Herramientas**: `/desarrollo` con documentación técnica, `inspector-mapa` (editor visual paint de mapas) y `creador-tiles` (editor pixel-art de sprites). Endpoints API REST para persistencia de entidades y mapas.
+- [x] **Creador de Tiles**: Editor pixel-art en `/desarrollo/herramientas/creador-tiles` con pincel, goma, bote, gotero, línea, rectángulo, undo/redo, soporte multi-frame, capas por entidad, preview en vivo y guardado directo al servidor.
+- [x] **Cortador de Spritesheets**: Herramienta en `/desarrollo/herramientas/cortador-texturas` que permite seleccionar rectángulos de una imagen subida, nombrarlos y guardarlos como entidades con sprite real. Snap a grilla, preview, Guardar Todo.
+- [x] **Inspector de Mapas**: Editor visual de mapas con paleta de tiles del atlas (thumbnails con sprite real), pintado con sprites en vez de colores sólidos, persistencia via API REST. Disponible en `/desarrollo/herramientas/inspector-mapa`.
+- [x] **Herramientas**: 3 herramientas integradas (inspector-mapa, creador-tiles, cortador-texturas) más visor-atlas (próximamente). Endpoints API REST para persistencia de entidades y mapas.
 
 ## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.

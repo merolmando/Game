@@ -41,6 +41,18 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 22 6-6"/><path d="M10.6 6.6 4.2 13l2.8 2.8 6.4-6.4c.8-.8.8-2 0-2.8l-1.4-1.4c-.8-.8-2-.8-2.8 0Z"/><path d="M16.2 9.2 21 4.4c.6-.6.6-1.6 0-2.2-.6-.6-1.6-.6-2.2 0L14 7"/></svg>
               <span>Gotero</span>
             </button>
+            <button id="toolLine" class="tool-icon-btn" title="Línea (L)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+              <span>Línea</span>
+            </button>
+            <button id="toolRect" class="tool-icon-btn" title="Rectángulo (R)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              <span>Rectángulo</span>
+            </button>
+          </div>
+          <div class="undo-row">
+            <button id="btnUndo" class="tool-btn-sm" title="Deshacer (Ctrl+Z)">↩ Deshacer</button>
+            <button id="btnRedo" class="tool-btn-sm" title="Rehacer (Ctrl+Shift+Z)">↪ Rehacer</button>
           </div>
         </section>
 
@@ -112,6 +124,14 @@
           <div class="prop-field">
             <label>Tamaño tile (px)</label>
             <input type="number" id="propTileSize" value="32" min="4" max="128" class="prop-input">
+          </div>
+          <div class="prop-field" id="layerSection" style="display:none">
+            <label>Capas</label>
+            <div id="layerTabs" class="layer-tabs"></div>
+            <div class="layer-actions">
+              <button id="btnAddLayer" class="tool-btn-sm">+ Capa</button>
+              <button id="btnRemoveLayer" class="tool-btn-sm" disabled>−</button>
+            </div>
           </div>
           <div class="prop-field frame-nav" id="frameNav" style="display:none">
             <label>Frame</label>

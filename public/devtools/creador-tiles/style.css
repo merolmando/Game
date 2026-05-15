@@ -289,6 +289,38 @@ html, body { height: 100%; overflow: hidden; }
 }
 .entity-item .entity-del:hover { text-decoration: underline; }
 
+.undo-row {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+.undo-row .tool-btn-sm { flex: 1; font-size: 0.7rem; }
+
+.layer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-bottom: 0.3rem;
+}
+.layer-tab {
+  padding: 0.2rem 0.4rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #8b949e;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.layer-tab:hover { border-color: #58a6ff; color: #c9d1d9; }
+.layer-tab.active { border-color: #1f6feb; color: #58a6ff; background: #1f6feb22; }
+
+.layer-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+.layer-actions .tool-btn-sm { font-size: 0.7rem; flex: 1; }
+
 .muted { color: #484f58; font-style: italic; font-size: 0.8rem; }
 
 .modal-overlay {

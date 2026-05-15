@@ -140,7 +140,7 @@ async function build() {
       left: currentX,
     });
 
-    sprites[entityId] = {
+    const spriteEntry = {
       x: currentX,
       y: 0,
       w: entityTileSize,
@@ -154,6 +154,21 @@ async function build() {
       color: entityData.defaultColor || '#888',
       animSpeed: entityData.animSpeed || 0,
     };
+
+    if (entityData.layers && Object.keys(entityData.layers).length > 0) {
+      spriteEntry.layers = {};
+      for (const layerName of Object.keys(entityData.layers)) {
+        const layer = entityData.layers[layerName];
+        spriteEntry.layers[layerName] = {
+          frameW: entityTileSize,
+          frameH: entityTileSize,
+          frames: layer.frames || frames,
+          animSpeed: layer.animSpeed || entityData.animSpeed || 0,
+        };
+      }
+    }
+
+    sprites[entityId] = spriteEntry;
 
     currentX += spriteWidth;
   }

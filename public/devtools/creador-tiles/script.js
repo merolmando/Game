@@ -9,15 +9,24 @@
 
   let currentTool = 'pencil';
   let currentColor = '#ffffff';
-  let pixelSize = 32;
   let canvasW = 32;
   let canvasH = 32;
   let zoom = 8;
   let currentFrame = 0;
   let totalFrames = 1;
   let isDrawing = false;
+  let toolStart = null;
+  let toolCurrent = null;
 
   const framesData = [];
+
+  let layers = {};
+  let layerOrder = [];
+  let activeLayer = '_all';
+
+  const undoStack = [];
+  const redoStack = [];
+  const MAX_UNDO = 50;
 
   const drawCanvas = document.getElementById('drawCanvas');
   const ctx = drawCanvas.getContext('2d');
@@ -25,15 +34,60 @@
   const previewCanvas = document.getElementById('previewCanvas');
   const previewCtx = previewCanvas.getContext('2d');
 
+  function initLayers() {
+    layers = { '_all': { frames: totalFrames, animSpeed: 0 } };
+    layerOrder = ['_all'];
+    activeLayer = '_all';
+    renderLayerTabs();
+  }
+
+  function getLayerFrames() {
+    const l = layers[activeLayer];
+    return l ? l.frames : totalFrames;
+  }
+
+  function setActiveLayer(name) {
+    if (!layers[name]) return;
+    activeLayer = name;
+    const l = layers[name];
+    let frameOffset = 0;
+    for (const ln of layerOrder) {
+      if (ln === name) break;
+      frameOffset += layers[ln].frames;
+    }
+    if (currentFrame < frameOffset || currentFrame >= frameOffset + l.frames) {
+      currentFrame = frameOffset;
+    }
+    syncFrameNav();
+    renderLayerTabs();
+    render();
+    renderPreview();
+  }
+
+  function renderLayerTabs() {
+    const container = document.getElementById('layerTabs');
+    container.innerHTML = '';
+    const show = Object.keys(layers).length > 1 || (layers['_all'] && layers['_all'].frames < totalFrames);
+    document.getElementById('layerSection').style.display = show ? 'block' : 'none';
+    document.getElementById('btnRemoveLayer').disabled = layerOrder.length <= 1;
+    layerOrder.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'layer-tab' + (name === activeLayer ? ' active' : '');
+      const l = layers[name];
+      btn.textContent = (name === '_all' ? 'Todo' : name) + ' (' + l.frames + ')';
+      btn.title = 'AnimSpeed: ' + (l.animSpeed || 0);
+      btn.addEventListener('click', () => setActiveLayer(name));
+      container.appendChild(btn);
+    });
+  }
+
   function initFrames() {
     framesData.length = 0;
     for (let f = 0; f < totalFrames; f++) {
       const grid = [];
       for (let r = 0; r < canvasH; r++) {
         const row = [];
-        for (let c = 0; c < canvasW; c++) {
-          row.push(null);
-        }
+        for (let c = 0; c < canvasW; c++) row.push(null);
         grid.push(row);
       }
       framesData.push(grid);
@@ -70,6 +124,25 @@
           ctx.fillStyle = color;
           ctx.fillRect(c * z, r * z, z, z);
         }
+      }
+    }
+
+    if (isDrawing && toolStart && toolCurrent && (currentTool === 'line' || currentTool === 'rect')) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 2;
+      if (currentTool === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(toolStart.col * z + z / 2, toolStart.row * z + z / 2);
+        ctx.lineTo(toolCurrent.col * z + z / 2, toolCurrent.row * z + z / 2);
+        ctx.stroke();
+      } else {
+        const x = Math.min(toolStart.col, toolCurrent.col) * z;
+        const y = Math.min(toolStart.row, toolCurrent.row) * z;
+        const w = (Math.abs(toolCurrent.col - toolStart.col) + 1) * z;
+        const h = (Math.abs(toolCurrent.row - toolStart.row) + 1) * z;
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(x, y, w, h);
       }
     }
 
@@ -110,9 +183,16 @@
   }
 
   function syncFrameNav() {
+    const lf = getLayerFrames();
     const nav = document.getElementById('frameNav');
-    nav.style.display = totalFrames > 1 ? 'block' : 'none';
-    document.getElementById('frameLabel').textContent = (currentFrame + 1) + ' / ' + totalFrames;
+    nav.style.display = lf > 1 || totalFrames > 1 ? 'block' : 'none';
+    let offset = 0;
+    for (const ln of layerOrder) {
+      if (ln === activeLayer) break;
+      offset += layers[ln].frames;
+    }
+    const localFrame = currentFrame - offset;
+    document.getElementById('frameLabel').textContent = (localFrame + 1) + ' / ' + lf;
   }
 
   function getPixelCoords(e) {
@@ -142,10 +222,8 @@
     if (!grid) return;
     const targetColor = getPixel(col, row);
     if (targetColor === fillColor) return;
-
     const visited = new Set();
     const stack = [[col, row]];
-
     while (stack.length > 0) {
       const [c, r] = stack.pop();
       const key = c + ',' + r;
@@ -158,47 +236,164 @@
     }
   }
 
+  function plotLine(x0, y0, x1, y1) {
+    const points = [];
+    const dx = Math.abs(x1 - x0);
+    const dy = -Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    let x = x0, y = y0;
+    while (true) {
+      points.push({ col: x, row: y });
+      if (x === x1 && y === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+    }
+    return points;
+  }
+
+  function pushUndo() {
+    const snap = framesData.map(grid => grid.map(row => [...row]));
+    undoStack.push(snap);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack.length = 0;
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push(framesData.map(grid => grid.map(row => [...row])));
+    const snap = undoStack.pop();
+    for (let f = 0; f < framesData.length && f < snap.length; f++) {
+      for (let r = 0; r < framesData[f].length && r < snap[f].length; r++) {
+        for (let c = 0; c < framesData[f][r].length && c < snap[f][r].length; c++) {
+          framesData[f][r][c] = snap[f][r][c];
+        }
+      }
+    }
+    render();
+    renderPreview();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(framesData.map(grid => grid.map(row => [...row])));
+    const snap = redoStack.pop();
+    for (let f = 0; f < framesData.length && f < snap.length; f++) {
+      for (let r = 0; r < framesData[f].length && r < snap[f].length; r++) {
+        for (let c = 0; c < framesData[f][r].length && c < snap[f][r].length; c++) {
+          framesData[f][r][c] = snap[f][r][c];
+        }
+      }
+    }
+    render();
+    renderPreview();
+  }
+
   drawCanvas.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     e.preventDefault();
     isDrawing = true;
-    const { col, row } = getPixelCoords(e);
+    const pos = getPixelCoords(e);
+
+    if (currentTool === 'line' || currentTool === 'rect') {
+      toolStart = { ...pos };
+      toolCurrent = { ...pos };
+      return;
+    }
+
+    pushUndo();
+
     if (currentTool === 'pencil') {
-      setPixel(col, row, currentColor);
+      setPixel(pos.col, pos.row, currentColor);
       render(); renderPreview();
     } else if (currentTool === 'eraser') {
-      setPixel(col, row, null);
+      setPixel(pos.col, pos.row, null);
       render(); renderPreview();
     } else if (currentTool === 'fill') {
-      floodFill(col, row, currentColor);
+      floodFill(pos.col, pos.row, currentColor);
       render(); renderPreview();
     } else if (currentTool === 'picker') {
-      const color = getPixel(col, row);
+      const color = getPixel(pos.col, pos.row);
       if (color) setCurrentColor(color);
     }
   });
 
   drawCanvas.addEventListener('mousemove', e => {
     if (!isDrawing) return;
-    const { col, row } = getPixelCoords(e);
+    const pos = getPixelCoords(e);
+
+    if (currentTool === 'line' || currentTool === 'rect') {
+      toolCurrent = { ...pos };
+      render();
+      return;
+    }
+
     if (currentTool === 'pencil') {
-      setPixel(col, row, currentColor);
+      setPixel(pos.col, pos.row, currentColor);
       render(); renderPreview();
     } else if (currentTool === 'eraser') {
-      setPixel(col, row, null);
+      setPixel(pos.col, pos.row, null);
       render(); renderPreview();
+    }
+  });
+
+  drawCanvas.addEventListener('mouseup', e => {
+    if (!isDrawing) return;
+    isDrawing = false;
+
+    if (currentTool === 'line' && toolStart && toolCurrent) {
+      pushUndo();
+      const points = plotLine(toolStart.col, toolStart.row, toolCurrent.col, toolCurrent.row);
+      points.forEach(p => setPixel(p.col, p.row, currentColor));
+      toolStart = null; toolCurrent = null;
+      render(); renderPreview();
+      return;
+    }
+
+    if (currentTool === 'rect' && toolStart && toolCurrent) {
+      pushUndo();
+      const x0 = Math.min(toolStart.col, toolCurrent.col);
+      const y0 = Math.min(toolStart.row, toolCurrent.row);
+      const x1 = Math.max(toolStart.col, toolCurrent.col);
+      const y1 = Math.max(toolStart.row, toolCurrent.row);
+      for (let r = y0; r <= y1; r++) {
+        for (let c = x0; c <= x1; c++) {
+          setPixel(c, r, currentColor);
+        }
+      }
+      toolStart = null; toolCurrent = null;
+      render(); renderPreview();
+      return;
+    }
+
+    toolStart = null; toolCurrent = null;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDrawing && (currentTool === 'line' || currentTool === 'rect')) {
+      isDrawing = false;
+      toolStart = null; toolCurrent = null;
+      render();
+    }
+  });
+
+  document.addEventListener('mouseleave', () => {
+    if (isDrawing && (currentTool === 'line' || currentTool === 'rect')) {
+      isDrawing = false;
+      toolStart = null; toolCurrent = null;
+      render();
     }
   });
 
   drawCanvas.addEventListener('contextmenu', e => {
     e.preventDefault();
     const { col, row } = getPixelCoords(e);
+    pushUndo();
     setPixel(col, row, null);
     render(); renderPreview();
   });
-
-  document.addEventListener('mouseup', () => { isDrawing = false; });
-  document.addEventListener('mouseleave', () => { isDrawing = false; });
 
   drawCanvas.addEventListener('wheel', e => {
     e.preventDefault();
@@ -214,22 +409,35 @@
   function setCurrentTool(tool) {
     currentTool = tool;
     document.querySelectorAll('.tool-icon-btn').forEach(b => b.classList.remove('active'));
-    const map = { pencil: 'toolPencil', eraser: 'toolEraser', fill: 'toolFill', picker: 'toolPicker' };
-    document.getElementById(map[tool]).classList.add('active');
+    const map = { pencil: 'toolPencil', eraser: 'toolEraser', fill: 'toolFill', picker: 'toolPicker', line: 'toolLine', rect: 'toolRect' };
+    const el = document.getElementById(map[tool]);
+    if (el) el.classList.add('active');
+    toolStart = null; toolCurrent = null;
   }
 
   document.getElementById('toolPencil').addEventListener('click', () => setCurrentTool('pencil'));
   document.getElementById('toolEraser').addEventListener('click', () => setCurrentTool('eraser'));
   document.getElementById('toolFill').addEventListener('click', () => setCurrentTool('fill'));
   document.getElementById('toolPicker').addEventListener('click', () => setCurrentTool('picker'));
+  document.getElementById('toolLine').addEventListener('click', () => setCurrentTool('line'));
+  document.getElementById('toolRect').addEventListener('click', () => setCurrentTool('rect'));
+
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnRedo').addEventListener('click', redo);
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+    if (ctrl && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); return; }
+    if (ctrl && e.key === 'Z') { e.preventDefault(); redo(); return; }
     switch (e.key.toLowerCase()) {
       case 'b': setCurrentTool('pencil'); break;
       case 'e': setCurrentTool('eraser'); break;
       case 'g': setCurrentTool('fill'); break;
       case 'i': setCurrentTool('picker'); break;
+      case 'l': setCurrentTool('line'); break;
+      case 'r': setCurrentTool('rect'); break;
     }
   });
 
@@ -288,15 +496,17 @@
     totalFrames = parseInt(document.getElementById('propFrames').value) || 1;
     currentFrame = 0;
     initFrames();
+    initLayers();
     syncFrameNav();
     render();
     renderPreview();
   });
 
   document.getElementById('propFrames').addEventListener('change', () => {
+    const prevTotal = totalFrames;
     totalFrames = parseInt(document.getElementById('propFrames').value) || 1;
     if (totalFrames < 1) totalFrames = 1;
-    if (totalFrames > 16) totalFrames = 16;
+    if (totalFrames > 64) totalFrames = 64;
     currentFrame = Math.min(currentFrame, totalFrames - 1);
     while (framesData.length < totalFrames) {
       const grid = [];
@@ -307,13 +517,21 @@
       }
       framesData.push(grid);
     }
+    if (totalFrames !== prevTotal) {
+      initLayers();
+    }
     syncFrameNav();
     render();
     renderPreview();
   });
 
   document.getElementById('framePrev').addEventListener('click', () => {
-    if (currentFrame > 0) {
+    let offset = 0;
+    for (const ln of layerOrder) {
+      if (ln === activeLayer) break;
+      offset += layers[ln].frames;
+    }
+    if (currentFrame > offset) {
       currentFrame--;
       syncFrameNav();
       render();
@@ -322,7 +540,13 @@
   });
 
   document.getElementById('frameNext').addEventListener('click', () => {
-    if (currentFrame < totalFrames - 1) {
+    let offset = 0;
+    for (const ln of layerOrder) {
+      if (ln === activeLayer) break;
+      offset += layers[ln].frames;
+    }
+    const lf = getLayerFrames();
+    if (currentFrame < offset + lf - 1) {
       currentFrame++;
       syncFrameNav();
       render();
@@ -330,8 +554,38 @@
     }
   });
 
+  document.getElementById('btnAddLayer').addEventListener('click', () => {
+    const name = prompt('Nombre de la capa:');
+    if (!name || name === '_all' || layers[name]) return;
+    const framesLeft = totalFrames - Object.values(layers).reduce((s, l) => s + l.frames, 0);
+    if (framesLeft <= 0) {
+      alert('No quedan frames libres. Aumentá la cantidad de frames primero.');
+      return;
+    }
+    const take = Math.min(framesLeft, parseInt(prompt('Frames para "' + name + '":', String(framesLeft))) || framesLeft);
+    layers[name] = { frames: take, animSpeed: 0 };
+    layerOrder.push(name);
+    setActiveLayer(name);
+    renderLayerTabs();
+    syncFrameNav();
+  });
+
+  document.getElementById('btnRemoveLayer').addEventListener('click', () => {
+    if (layerOrder.length <= 1) return;
+    if (activeLayer === '_all') return;
+    const name = activeLayer;
+    const frames = layers[name].frames;
+    if (!confirm('Eliminar capa "' + name + '" (' + frames + ' frames)?')) return;
+    delete layers[name];
+    const idx = layerOrder.indexOf(name);
+    layerOrder.splice(idx, 1);
+    setActiveLayer(layerOrder[Math.min(idx, layerOrder.length - 1)]);
+    renderLayerTabs();
+    syncFrameNav();
+  });
+
   function getEntityData() {
-    return {
+    const data = {
       type: document.getElementById('propType').value,
       name: document.getElementById('propName').value,
       solid: document.getElementById('propSolid').checked,
@@ -340,6 +594,14 @@
       tileSize: parseInt(document.getElementById('propTileSize').value) || canvasW,
       defaultColor: currentColor,
     };
+    const layerData = {};
+    layerOrder.forEach(name => {
+      if (name !== '_all') {
+        layerData[name] = { frames: layers[name].frames, animSpeed: layers[name].animSpeed };
+      }
+    });
+    if (Object.keys(layerData).length > 0) data.layers = layerData;
+    return data;
   }
 
   function spriteToBase64() {
@@ -409,7 +671,8 @@
     el.textContent = msg;
     el.style.color = color || '#8b949e';
     el.style.opacity = '1';
-    setTimeout(() => {
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => {
       if (el.textContent === msg) {
         el.style.opacity = '0';
         setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 300);
@@ -493,6 +756,19 @@
       totalFrames = ent.frames || 1;
       currentFrame = 0;
       initFrames();
+      initLayers();
+
+      if (ent.layers && Object.keys(ent.layers).length > 0) {
+        layers = {};
+        layerOrder = [];
+        Object.keys(ent.layers).forEach(name => {
+          layers[name] = { frames: ent.layers[name].frames, animSpeed: ent.layers[name].animSpeed || 0 };
+          layerOrder.push(name);
+        });
+        activeLayer = layerOrder[0];
+      }
+
+      renderLayerTabs();
       syncFrameNav();
       highlightEntityInList(id);
 
@@ -573,6 +849,7 @@
     zoom = 8;
     document.getElementById('zoomLabel').textContent = '800%';
     initFrames();
+    initLayers();
     syncFrameNav();
     render();
     renderPreview();

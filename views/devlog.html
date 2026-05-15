@@ -168,6 +168,38 @@
         <li>Fix <code>render()</code> — <code>cellPx</code> escala correctamente con <code>tileSize</code>.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-16 — Cortador de Spritesheets, preview de sprites en Inspector, mejoras al Creador de Tiles + capas</h2>
+      <p><strong>Cortador de Spritesheets</strong> — Nueva herramienta en <code>/desarrollo/herramientas/cortador-texturas</code>:</p>
+      <ul>
+        <li>Upload imagen PNG/JPG/GIF/WebP mediante drag & drop o selector de archivos.</li>
+        <li>Canvas interactivo con zoom, snap a grilla y overlay de grid.</li>
+        <li>Click-drag para crear rectángulos de selección sobre la imagen.</li>
+        <li>Cada selección se nombra y configura (tipo, solid, tileSize, frames, animSpeed).</li>
+        <li>Preview del sprite recortado en panel lateral.</li>
+        <li>Guardado individual o Guardar Todo → <code>POST /api/entidades</code> → atlas reconstruido automáticamente.</li>
+        <li>Lista de entidades existentes con indicador de sprite real.</li>
+        <li>Ruta en servidor: <code>TOOL_ROUTES['/desarrollo/herramientas/cortador-texturas']</code>.</li>
+      </ul>
+      <p><strong>Preview de sprites en Inspector de Mapas</strong> — Mejora visual en <code>/desarrollo/herramientas/inspector-mapa</code>:</p>
+      <ul>
+        <li>La paleta de tiles ahora muestra thumbnails con el sprite real del atlas en vez de <code>background: color</code>.</li>
+        <li>Cada tile de la paleta es un <code>&lt;canvas&gt;</code> que dibuja <code>drawImage(atlasImg, ...)</code>.</li>
+        <li>El canvas del mapa pinta los tiles usando sprites del atlas en vez de <code>fillRect(color)</code>.</li>
+        <li>Fallback a color sólido si el sprite no está disponible.</li>
+        <li>Exits también muestran el sprite del tile subyacente.</li>
+        <li>Props de tile muestran el entityId cuando corresponde.</li>
+      </ul>
+      <p><strong>Creador de Tiles — mejoras + sistema de capas</strong> — <code>/desarrollo/herramientas/creador-tiles</code>:</p>
+      <ul>
+        <li><strong>Undo/Redo</strong> — sistema basado en snapshots (Ctrl+Z / Ctrl+Shift+Z, 50 niveles).</li>
+        <li><strong>Herramienta línea</strong> — dibujo de líneas con algoritmo Bresenham, preview en tiempo real.</li>
+        <li><strong>Herramienta rectángulo</strong> — rectángulo relleno, preview en tiempo real.</li>
+        <li><strong>Capas por entidad</strong> — las entidades pueden tener <code>layers</code> (metadata que agrupa frames por nombre: idle, walk, etc.). Cada capa tiene sus propios frames y animSpeed. La UI muestra tabs de capa.</li>
+        <li><strong>build-atlas.js</strong> — almacena metadata de layers en <code>atlas.json</code>. Schema backward compatible: entidades sin layers funcionan como antes.</li>
+        <li>Atajos de teclado: L = línea, R = rectángulo.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

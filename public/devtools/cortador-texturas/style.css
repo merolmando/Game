@@ -1,0 +1,120 @@
+.drop-zone {
+  border: 2px dashed #30363d;
+  border-radius: 8px;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.drop-zone:hover { border-color: #58a6ff; background: #1f6feb11; }
+.drop-zone.dragover { border-color: #1f6feb; background: #1f6feb22; }
+.drop-zone p { color: #8b949e; font-size: 0.85rem; margin-bottom: 0.5rem; }
+.drop-zone.has-image { border-style: solid; border-color: #21262d; cursor: default; }
+.drop-zone.has-image:hover { border-color: #21262d; background: transparent; }
+
+.image-info {
+  font-size: 0.75rem;
+  color: #8b949e;
+  padding: 0.3rem 0;
+  text-align: center;
+}
+
+.grid-size-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+}
+.grid-size-row label { color: #8b949e; }
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #484f58;
+  font-style: italic;
+  pointer-events: none;
+}
+
+#spriteCanvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.coord-status {
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  padding: 0.2rem 0.8rem;
+  font-size: 0.75rem;
+  color: #8b949e;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selections-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sel-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  margin-bottom: 0.2rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: border-color 0.15s;
+}
+.sel-item:hover { border-color: #58a6ff; }
+.sel-item.active { border-color: #1f6feb; background: #1f6feb11; }
+.sel-item .sel-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  border: 1px solid #30363d;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+.sel-item .sel-name { flex: 1; color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-item .sel-dim { color: #484f58; font-size: 0.7rem; white-space: nowrap; }
+.sel-item .sel-del {
+  color: #f85149;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.3rem;
+}
+.sel-item .sel-del:hover { text-decoration: underline; }
+
+.sel-count { font-weight: normal; color: #8b949e; font-size: 0.75rem; }
+
+.prop-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.prop-actions .tool-btn { flex: 1; font-size: 0.8rem; }
+
+.frames-auto {
+  color: #484f58;
+  font-size: 0.7rem;
+  font-weight: normal;
+}
+
+.toolbar .size-input {
+  padding: 0.2rem 0.3rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  font-size: 0.8rem;
+  text-align: center;
+}

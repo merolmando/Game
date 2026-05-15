@@ -20,10 +20,28 @@
   const tilePalette = [];
 
   let atlasSprites = {};
+  let atlasImg = null;
+
+  async function loadAtlasImage() {
+    try {
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = '/generated/atlas.png?t=' + Date.now();
+      });
+      atlasImg = img;
+    } catch {
+      atlasImg = null;
+    }
+  }
 
   async function loadExternalPalette() {
     try {
-      const res = await fetch('/generated/atlas.json?t=' + Date.now());
+      const [res] = await Promise.all([
+        fetch('/generated/atlas.json?t=' + Date.now()),
+        loadAtlasImage(),
+      ]);
       if (res.ok) {
         const atlas = await res.json();
         atlasSprites = atlas.sprites || {};
@@ -135,6 +153,20 @@
       div.className = 'palette-tile' + (selectedTile && selectedTile.id === t.id ? ' selected' : '');
       div.style.background = t.color;
       if (t.id === 0) div.style.background = '#0d1117';
+
+      if (t.id > 0 && t.entityId && atlasImg && atlasSprites[t.entityId]) {
+        const sprite = atlasSprites[t.entityId];
+        const c = document.createElement('canvas');
+        c.width = sprite.frameW;
+        c.height = sprite.frameH;
+        c.style.width = '100%';
+        c.style.height = '100%';
+        c.style.display = 'block';
+        const cx = c.getContext('2d');
+        cx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, 0, 0, sprite.frameW, sprite.frameH);
+        div.appendChild(c);
+      }
+
       if (t.id > 0) {
         const label = document.createElement('span');
         label.className = 'palette-id';
@@ -233,15 +265,22 @@
           const x = col * cellPx;
           const y = row * cellPx;
           if (tile > 0) {
-            ctx.fillStyle = getTileColor(tile);
+            const entityId = mapData.tileSprites ? mapData.tileSprites[tile] : null;
+            const sprite = entityId ? atlasSprites[entityId] : null;
+            if (atlasImg && sprite) {
+              ctx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, x, y, cellPx, cellPx);
+            } else {
+              ctx.fillStyle = getTileColor(tile);
+              ctx.fillRect(x, y, cellPx, cellPx);
+            }
           } else {
             if (l === currentLayer) {
               ctx.fillStyle = '#1a1a2e';
+              ctx.fillRect(x, y, cellPx, cellPx);
             } else {
               continue;
             }
           }
-          ctx.fillRect(x, y, cellPx, cellPx);
         }
       }
     });
@@ -267,8 +306,15 @@
       mapData.exits.forEach(e => {
         const ex = e.tileX * cellPx;
         const ey = e.tileY * cellPx;
-        ctx.fillStyle = 'rgba(255,215,0,0.3)';
-        ctx.fillRect(ex, ey, cellPx, cellPx);
+        const exitTileId = mapData.layers && mapData.layers.mundo ? mapData.layers.mundo[e.tileY]?.[e.tileX] : null;
+        const entityId = exitTileId && mapData.tileSprites ? mapData.tileSprites[exitTileId] : null;
+        const sprite = entityId ? atlasSprites[entityId] : null;
+        if (atlasImg && sprite) {
+          ctx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, ex, ey, cellPx, cellPx);
+        } else {
+          ctx.fillStyle = 'rgba(255,215,0,0.3)';
+          ctx.fillRect(ex, ey, cellPx, cellPx);
+        }
         ctx.strokeStyle = 'rgba(255,215,0,0.7)';
         ctx.lineWidth = 2;
         ctx.strokeRect(ex, ey, cellPx, cellPx);
@@ -327,7 +373,8 @@
       const id = getTileAt(l, col, row);
       const t = tilePalette.find(p => p.id === id);
       const name = t ? t.name : '\u2014';
-      html += '<div class="prop-row"><span class="prop-label">' + l + '</span><span class="prop-value"><span class="devtools-color-swatch" style="background:' + getTileColor(id) + '"></span>' + name + ' (ID ' + id + ')</span></div>';
+      const entityId = t && t.entityId ? t.entityId : null;
+      html += '<div class="prop-row"><span class="prop-label">' + l + '</span><span class="prop-value"><span class="devtools-color-swatch" style="background:' + getTileColor(id) + '"></span>' + name + ' (ID ' + id + ')' + (entityId ? ' <span style="color:#58a6ff;font-size:0.7rem">' + entityId + '</span>' : '') + '</span></div>';
     });
     propContent.innerHTML = html;
   }

@@ -43,6 +43,7 @@ const FILE_ROUTES = {
 const TOOL_ROUTES = {
   '/desarrollo/herramientas/inspector-mapa': path.join(PUBLIC_DIR, 'devtools/inspector-mapa/index.html'),
   '/desarrollo/herramientas/creador-tiles': path.join(PUBLIC_DIR, 'devtools/creador-tiles/index.html'),
+  '/desarrollo/herramientas/cortador-texturas': path.join(PUBLIC_DIR, 'devtools/cortador-texturas/index.html'),
 };
 
 function serveFile(res, filePath, contentType) {
