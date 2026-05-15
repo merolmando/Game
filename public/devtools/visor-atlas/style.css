@@ -1,0 +1,126 @@
+.canvas-wrapper { position: relative; }
+
+.stats-bar {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-left: 1rem;
+}
+.stats-bar span { white-space: nowrap; }
+.stats-bar span + span {
+  border-left: 1px solid #30363d;
+  padding-left: 0.8rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+.search-input:focus { border-color: #1f6feb; outline: none; }
+
+.entity-list {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+.entity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  margin-bottom: 0.2rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.entity-item:hover { border-color: #58a6ff; }
+.entity-item.active { border-color: #1f6feb; background: #1f6feb11; }
+.entity-item .e-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid #30363d;
+  flex-shrink: 0;
+}
+.entity-item .e-name { flex: 1; color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity-item .e-frames { color: #484f58; font-size: 0.7rem; white-space: nowrap; }
+.entity-item .e-badge {
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  background: #21262d;
+  color: #8b949e;
+}
+
+#detailContent .tool-section {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #21262d;
+}
+#detailContent .tool-section:last-child { border-bottom: none; }
+
+.detail-id {
+  font-size: 0.75rem;
+  color: #484f58;
+  font-family: monospace;
+}
+
+.preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  min-height: 100px;
+}
+
+#animCanvas { image-rendering: pixelated; }
+
+.frame-strip {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.frame-strip canvas {
+  border: 2px solid #21262d;
+  border-radius: 3px;
+  image-rendering: pixelated;
+  transition: border-color 0.15s;
+}
+.frame-strip canvas.active {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 1px #1f6feb;
+}
+
+#atlasCanvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+#entityBadge { margin-left: auto; }
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #484f58;
+  font-size: 0.9rem;
+  font-style: italic;
+  pointer-events: none;
+  z-index: 1;
+}

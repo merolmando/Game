@@ -200,6 +200,32 @@
         <li>Atajos de teclado: L = línea, R = rectángulo.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-16 — Visor de Atlas, refactor de estilos base (devtools-base.css), fix de overflow</h2>
+      <p><strong>Visor de Atlas</strong> — Nueva herramienta en <code>/desarrollo/herramientas/visor-atlas</code>:</p>
+      <ul>
+        <li>Carga <code>atlas.png</code> + <code>atlas.json</code> y renderiza el atlas completo con recuadros coloreados por entidad.</li>
+        <li>Click en el atlas o en la lista de entidades (izquierda) para seleccionar y ver detalle en panel derecho.</li>
+        <li>Panel de detalle con preview animado (requestAnimationFrame), strip de thumbnails por frame, propiedades (tipo, sólido, frames, animSpeed, posición, tamaño, capas, hasSprite).</li>
+        <li>Zoom con rueda, botones (+/−/Ajustar) y fit inicial. Búsqueda/filtro de entidades.</li>
+        <li>Stats bar en header: cantidad de entidades, frames totales, dimensiones del atlas.</li>
+        <li>Ruta en servidor: <code>TOOL_ROUTES['/desarrollo/herramientas/visor-atlas']</code>.</li>
+      </ul>
+      <p><strong>Refactor de estilos base compartidos</strong> — <code>devtools-base.css</code>:</p>
+      <ul>
+        <li>Extracción de ~30 reglas CSS duplicadas entre todas las herramientas a un nuevo archivo compartido <code>public/devtools/devtools-base.css</code>.</li>
+        <li>Incluye: reset, tool-body/container, header, botones (tool-btn/tool-btn-sm), toolbar, layout de 3 paneles (left/center/right), canvas-wrapper, tool-section, propiedades (prop-row/field/input/select), muted, modal.</li>
+        <li>Cargado en las 4 herramientas (visor-atlas, cortador-texturas, creador-tiles, inspector-mapa) antes de <code>devtools.css</code> y su propio style.css.</li>
+        <li>Deduplicación: creador-tiles/style.css 352 → 216 líneas, inspector-mapa/style.css 307 → 126 líneas.</li>
+        <li>Cortador-texturas y visor-atlas ahora reciben los estilos base que les faltaban (antes dependían de reglas no definidas).</li>
+      </ul>
+      <p><strong>Fix de overflow en canvas del atlas</strong> — En <code>visor-atlas/script.js</code>, <code>renderAtlas()</code>:</p>
+      <ul>
+        <li>Los nombres de entidades dibujados con <code>fillText</code> sobre el atlas ahora se miden con <code>ctx.measureText()</code>.</li>
+        <li>Si el texto excede el ancho del rectángulo (<code>rw - 6</code>), se trunca agregando <code>"…"</code> para evitar desborde horizontal.</li>
+        <li>El nombre completo sigue visible en el panel de detalle al seleccionar la entidad.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

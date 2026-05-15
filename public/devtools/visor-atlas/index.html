@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tierra Media - Visor de Atlas</title>
+  <link rel="stylesheet" href="/devtools/devtools-base.css">
+  <link rel="stylesheet" href="/devtools/devtools.css">
+  <link rel="stylesheet" href="/devtools/visor-atlas/style.css">
+</head>
+<body class="tool-body">
+  <div class="tool-container">
+
+    <header class="tool-header">
+      <a href="/desarrollo/herramientas" class="tool-back">← Herramientas</a>
+      <h1>Visor de Atlas</h1>
+      <div class="stats-bar" id="statsBar">
+        <span id="statEntities">—</span>
+        <span id="statFrames">—</span>
+        <span id="statDimensions">—</span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button id="zoomOut" class="tool-btn-sm">−</button>
+        <span id="zoomLabel" class="toolbar-value">100%</span>
+        <button id="zoomIn" class="tool-btn-sm">+</button>
+        <button id="zoomFit" class="tool-btn-sm">Ajustar</button>
+      </div>
+      <div class="toolbar-group" id="entityBadge">
+        <span id="badgeName" style="color:#58a6ff;font-weight:bold"></span>
+      </div>
+    </div>
+
+    <div class="tool-main">
+
+      <aside class="panel-left">
+        <section class="tool-section">
+          <h3>Entidades</h3>
+          <input type="text" id="searchInput" class="search-input" placeholder="Buscar...">
+          <div id="entityList" class="entity-list"></div>
+        </section>
+      </aside>
+
+      <section class="panel-center">
+        <div id="canvasWrapper" class="canvas-wrapper">
+          <canvas id="atlasCanvas"></canvas>
+          <div id="emptyState" class="empty-state">
+            <p>Cargando atlas...</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel-right">
+        <div id="detailView">
+          <div id="noSelection" class="muted" style="text-align:center;padding:2rem 0">
+            Seleccioná una entidad en el atlas o en la lista
+          </div>
+          <div id="detailContent" style="display:none">
+            <section class="tool-section">
+              <h3 id="detailName">—</h3>
+              <div class="detail-id" id="detailId">—</div>
+            </section>
+
+            <section class="tool-section">
+              <h3>Preview</h3>
+              <div class="preview-container">
+                <canvas id="animCanvas"></canvas>
+              </div>
+              <div class="frame-strip" id="frameStrip"></div>
+            </section>
+
+            <section class="tool-section">
+              <h3>Propiedades</h3>
+              <div class="prop-row"><span class="prop-label">Tipo</span><span id="dType" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Sólido</span><span id="dSolid" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Frames</span><span id="dFrames" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">AnimSpeed</span><span id="dAnimSpeed" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Posición</span><span id="dPos" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Tamaño frame</span><span id="dFrameSize" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Sprite real</span><span id="dHasSprite" class="prop-value">—</span></div>
+              <div class="prop-row" id="dLayersRow" style="display:none"><span class="prop-label">Capas</span><span id="dLayers" class="prop-value">—</span></div>
+            </section>
+
+            <section class="tool-section">
+              <button id="btnEditEntity" class="tool-btn" style="width:100%">Editar en Creador de Tiles</button>
+            </section>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+  </div>
+  <script src="/devtools/visor-atlas/script.js"></script>
+</body>
+</html>
