@@ -296,7 +296,7 @@ Representa al jugador con estado completo. Se adapta automáticamente al modo de
 | `update2D(dt)` | `dt: number` | `void` | Lee Input (WASD), calcula dx/dy cardinal (solo 0, ±1). Si hay dos ejes, normaliza con ×0.7071. Actualiza `facingX/facingY` priorizando horizontal sobre vertical. Llama a `move()`. Anima bob (fase +8 rad/s, offset = `sin(fase) * 2`) |
 | `updateRay(dt)` | `dt: number` | `void` | Lee Input: rotación (`rotate()`), forward/backward (`move(dirX*move, dirY*move)`), strafe izquierda/derecha (`move(-dirY*move, dirX*move)`). Anima bob si hay movimiento |
 | `move(dx, dy)` | `dx, dy: number` — desplazamiento en tiles | `void` | Colisión circular con wall sliding: prueba la nueva posición X con `_circleBlocked()` (círculo de radio `COLLISION_RADIUS`), si no colisiona, aplica. Luego prueba Y con la X ya actualizada |
-| `_circleBlocked(cx, cy)` | `cx, cy: number` — centro del círculo | `boolean` | Retorna `true` si el círculo colisiona con tiles sólidos (via `Map.checkCircleCollision()`) o con algún NPC/enemigo (distancia < `COLLISION_RADIUS * 2`) |
+| `_circleBlocked(cx, cy)` | `cx, cy: number` — centro del círculo | `boolean` | Retorna `true` si `Map.current` es null (null guard). Sino, retorna `true` si el círculo colisiona con tiles sólidos (via `Map.checkCircleCollision()`) o con algún NPC/enemigo (distancia < `COLLISION_RADIUS * 2`) |
 | `rotate(angle)` | `angle: number` — radianes a rotar (negativo = izquierda) | `void` | Matriz de rotación 2×2 sobre `dirX/dirY` y `planeX/planeY`. Fórmula: `newDirX = dirX*cos - dirY*sin`, `newDirY = dirX*sin + dirY*cos` (idem para plane) |
 
 **Animación bob:**
@@ -399,11 +399,11 @@ Implementa el raycasting clásico de Wolfenstein 3D: lanza un rayo por cada colu
    c. Inicializar mapX, mapY en el tile del jugador
    d. Calcular deltaDist (distancia por celda)
    e. Calcular step y sideDist (distancia al primer borde)
-   f. Bucle DDA:
-      - Avanzar al siguiente borde de celda (X o Y, el que esté más cerca)
-      - Si la celda es una pared (Map.isWall()) → hit = 1, break
-      - Nota: isWall() solo chequea la capa 'estructura' con solid: true.
-        El agua y tiles decorativos NO detienen el rayo.
+    f. Bucle DDA (con límite de `maxSteps = mapWidth * 2` para evitar loop infinito en mapas sin bordes):
+       - Avanzar al siguiente borde de celda (X o Y, el que esté más cerca)
+       - Si la celda es una pared (Map.isWall()) → hit = 1, break
+       - Nota: isWall() solo chequea la capa 'estructura' con solid: true.
+         El agua y tiles decorativos NO detienen el rayo.
    g. Calcular perpDist (distancia perpendicular anti-fish-eye)
    h. Calcular lineHeight, drawStart, drawEnd
    i. Guardar ray = { drawStart, drawEnd, side, tileType, perpDist }
@@ -432,7 +432,7 @@ Bifurca entre pipeline 2D top-down y pipeline de raycaster pseudo-3D según `Map
 | `init(canvas)` | `canvas: HTMLCanvasElement` | `void` | Guarda referencia al canvas y su contexto 2D, setea `width/height = SCREEN_W/SCREEN_H`, prealoca `rays[]` |
 | `render(player)` | `player: Player` | `void` | Pipeline principal: limpia canvas, si `Map.current === null` retorna (guard contra crash), según `mode` delega a ray pipeline o `draw2D()`, y siempre dibuja `drawTransition()` |
 | `drawCeiling(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad superior. Lee color desde `layers.cielo.color` si existe; fallback a `#1a1a2e` |
-| `drawFloor(ctx, player)` | `ctx, player` | `void` | Floor-casting texturizado: por cada columna/píxel abajo del horizonte, calcula coordenadas del mundo, lee tile de `terreno`, dibuja texel desde el atlas vía `ImageData`. Si hay atlas y estructura decorativa (tiles no-sólidos), los blend sobre el piso. Fallback a `_drawSolidFloor()` si no hay atlas |
+| `drawFloor(ctx, player)` | `ctx, player` | `void` | Floor-casting texturizado: por cada columna/píxel abajo del horizonte (`startY = max(halfH + 1, wallBottom)` para evitar 1px negro en `halfH`), calcula coordenadas del mundo, lee tile de `terreno`, dibuja texel desde el atlas vía `ImageData`. Si hay atlas y estructura decorativa (tiles no-sólidos), los blend sobre el piso. Fallback a `_drawSolidFloor()` si no hay atlas |
 | `_drawSolidFloor(ctx, player)` | `ctx, player` | `void` | Fallback: rellena la mitad inferior con el color del tile de terreno donde está parado el jugador |
 | `_buildAtlasData()` | — | `void` | Renderiza el atlas completo en un canvas temporal y captura su `ImageData` para acceso pixel por pixel en floor-casting |
 | `drawWalls(ctx, player)` | `ctx, player` | `void` | Itera `rays[]`: por cada columna, obtiene el `tileType` golpeado. Si hay `tileSprites[type]` y el atlas está cargado, samplea 1px del atlas escalado a altura de pared. Las paredes Y-side (side === 1) se oscurecen con overlay `rgba(0,0,0,0.4)` en vez de `globalAlpha` (evita el efecto transparente). Si no hay atlas, usa `tileColors[type].color` con `shadeColor()` |

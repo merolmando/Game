@@ -97,8 +97,8 @@ const Renderer = {
 
     for (let x = 0; x < SCREEN_W; x++) {
       const ray = this.rays[x];
-      const wallBottom = Math.ceil(ray.drawEnd);
-      const startY = Math.max(halfH, wallBottom);
+        const wallBottom = Math.ceil(ray.drawEnd);
+      const startY = Math.max(halfH + 1, wallBottom);
 
       const cameraX = 2 * x / SCREEN_W - 1;
       const rayDirX = player.dirX + player.planeX * cameraX;

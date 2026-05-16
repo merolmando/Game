@@ -39,8 +39,11 @@ const Raycaster = {
 
       let hit = 0;
       let side;
+      let steps = 0;
+      const maxSteps = Math.max(Map.getWidth(), Map.getHeight()) * 2;
 
-      while (hit === 0) {
+      while (hit === 0 && steps < maxSteps) {
+        steps++;
         if (sideDistX < sideDistY) {
           sideDistX += deltaDistX;
           mapX += stepX;

@@ -238,6 +238,15 @@
       <p><strong>Separación de capas:</strong> La capa legacy <code>mundo</code> ahora se divide automáticamente al cargar el mapa: tiles de pared van a <code>estructura</code> (solo estos detienen el raycaster), agua y decoraciones van a <code>terreno</code>. El agua bloquea al jugador (vía <code>isSolid()</code>) pero no se renderiza como pared.</p>
       <p><strong>Documentación:</strong> Actualizados <code>README.md</code>, <code>gamecore/README.md</code>, <code>COLORES.md</code>, <code>tareas.json</code> y <code>hitos.json</code> reflejando los nuevos sistemas.</p>
     </article>
+    <article class="entry">
+      <h2>2026-05-16 — Bug fixes post-colisión circular</h2>
+      <p>Corrección de 3 bugs detectados tras la implementación de colisión circular y piso texturizado:</p>
+      <ul>
+        <li><strong>Fix horizonte de 1px negro (<code>renderer.js</code>):</strong> El floor-casting arrancaba en <code>halfH</code> pero <code>p &lt;= 0</code> skipeaba la fila del horizonte, dejando un píxel sin dibujar. Cambiado a <code>startY = max(halfH + 1, wallBottom)</code> para que el piso empiece limpiamente abajo del horizonte.</li>
+        <li><strong>Fix posible loop infinito en DDA (<code>raycaster.js</code>):</strong> El while loop del raycaster no tenía límite de iteraciones. Si un mapa no tenía bordes de pared, el rayo podía avanzar indefinidamente. Agregado <code>maxSteps = mapWidth * 2</code> como tope.</li>
+        <li><strong>Fix null guard en <code>_circleBlocked</code> (<code>player.js</code>):</strong> Si <code>_circleBlocked()</code> se llamaba sin mapa cargado, acceder a <code>Map.current.characters</code> lanzaba TypeError. Agregado <code>if (!Map.current) return true</code> al inicio.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

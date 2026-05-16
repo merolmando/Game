@@ -44,6 +44,7 @@ const Player = {
   },
 
   _circleBlocked(cx, cy) {
+    if (!Map.current) return true;
     const r = this.COLLISION_RADIUS;
     if (Map.checkCircleCollision(cx, cy, r)) return true;
     const entities = [...(Map.current.characters || []), ...(Map.current.enemies || [])];
