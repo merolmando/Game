@@ -355,6 +355,13 @@
     document.getElementById('dBlockVisionRow').style.display = showHB ? 'flex' : 'none';
     document.getElementById('dHalfSolidRow').style.display = showHB ? 'flex' : 'none';
 
+    const emissionVal = e.emission || 0;
+    const emissionColor = e.emissionColor || '#ffffff';
+    if (emissionVal > 0) {
+      document.getElementById('dEmission').innerHTML = emissionVal + ' <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + emissionColor + ';vertical-align:middle;border:1px solid #30363d"></span>';
+    } else {
+      document.getElementById('dEmission').textContent = 'No';
+    }
     document.getElementById('dHasSprite').textContent = meta.hasSprite ? '\u2705 S\u00ED' : '\u274C No (placeholder)';
     document.getElementById('dHasSprite').style.color = meta.hasSprite ? '#3fb950' : '#f85149';
 

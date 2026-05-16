@@ -173,9 +173,9 @@ const Renderer = {
 
         const lightFloor = Map.getLight(tileX, tileY);
         const fi = ((y - halfH) * SCREEN_W + x) * 4;
-        fdata[fi] = Math.floor(r * lightFloor);
-        fdata[fi + 1] = Math.floor(g * lightFloor);
-        fdata[fi + 2] = Math.floor(b * lightFloor);
+        fdata[fi] = Math.floor(r * lightFloor.r);
+        fdata[fi + 1] = Math.floor(g * lightFloor.g);
+        fdata[fi + 2] = Math.floor(b * lightFloor.b);
         fdata[fi + 3] = 255;
       }
     }
@@ -200,12 +200,25 @@ const Renderer = {
       if (ray.side === 0) {
         const a = Map.getLight(lx, ray.mapY - 1);
         const b = Map.getLight(lx, ray.mapY);
-        light = a + (b - a) * ray.wallX;
+        light = {
+          r: a.r + (b.r - a.r) * ray.wallX,
+          g: a.g + (b.g - a.g) * ray.wallX,
+          b: a.b + (b.b - a.b) * ray.wallX,
+        };
       } else {
         const a = Map.getLight(ray.mapX - 1, ly);
         const b = Map.getLight(ray.mapX, ly);
-        light = a + (b - a) * ray.wallX;
+        light = {
+          r: a.r + (b.r - a.r) * ray.wallX,
+          g: a.g + (b.g - a.g) * ray.wallX,
+          b: a.b + (b.b - a.b) * ray.wallX,
+        };
       }
+
+      const sideDark = ray.side === 1 ? 0.85 : 1;
+      light.r *= sideDark;
+      light.g *= sideDark;
+      light.b *= sideDark;
 
       if (spriteAvailable && sprite) {
         const texX = Math.floor(ray.wallX * sprite.frameW);
@@ -214,15 +227,17 @@ const Renderer = {
           sprite.x + texX, sprite.y, 1, sprite.frameH,
           x, ray.drawStart, 1, ray.drawEnd - ray.drawStart
         );
-        const darkness = 1 - light + (ray.side === 1 ? 0.15 : 0);
-        if (darkness > 0) {
-          ctx.fillStyle = `rgba(0,0,0,${Math.min(1, darkness)})`;
+        if (light.r < 1 || light.g < 1 || light.b < 1) {
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = `rgb(${Math.floor(light.r * 255)},${Math.floor(light.g * 255)},${Math.floor(light.b * 255)})`;
           ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
+          ctx.globalCompositeOperation = 'source-over';
         }
       } else {
         const info = Map.current.tileColors[ray.tileType];
         const baseColor = info ? info.color : '#888';
-        const shade = light * (ray.side === 1 ? 0.6 : 1);
+        const intensity = (light.r + light.g + light.b) / 3;
+        const shade = intensity * (ray.side === 1 ? 0.6 : 1);
         ctx.fillStyle = this.shadeColor(baseColor, shade);
         ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
       }
@@ -255,16 +270,19 @@ const Renderer = {
                 sx, frame.sy, 1, frame.sh,
                 stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY
               );
-              if (light < 1) {
-                ctx.fillStyle = `rgba(0,0,0,${1 - light})`;
+              if (light.r < 1 || light.g < 1 || light.b < 1) {
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.fillStyle = `rgb(${Math.floor(light.r * 255)},${Math.floor(light.g * 255)},${Math.floor(light.b * 255)})`;
                 ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
+                ctx.globalCompositeOperation = 'source-over';
               }
             }
           }
         } else {
           const colorId = obj.tileId || 1;
           const info = Map.current.tileColors ? Map.current.tileColors[colorId] : null;
-          ctx.fillStyle = this.shadeColor(info ? info.color : '#888', light);
+          const intensity = (light.r + light.g + light.b) / 3;
+          ctx.fillStyle = this.shadeColor(info ? info.color : '#888', intensity);
           ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
         }
       }
@@ -351,13 +369,16 @@ const Renderer = {
           } else {
             Sprite.draw(ctx, entityId, sx, dy, fw, displayH, 0);
           }
-          if (light < 1) {
-            ctx.fillStyle = `rgba(0,0,0,${1 - light})`;
+          if (light.r < 1 || light.g < 1 || light.b < 1) {
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = `rgb(${Math.floor(light.r * 255)},${Math.floor(light.g * 255)},${Math.floor(light.b * 255)})`;
             ctx.fillRect(sx, dy, fw, displayH);
+            ctx.globalCompositeOperation = 'source-over';
           }
         } else {
           const info = map.tileColors ? map.tileColors[tile] : null;
-          ctx.fillStyle = this.shadeColor(info ? info.color : '#000', light);
+          const intensity = (light.r + light.g + light.b) / 3;
+          ctx.fillStyle = this.shadeColor(info ? info.color : '#000', intensity);
           ctx.fillRect(sx, sy, ts, ts);
         }
       }

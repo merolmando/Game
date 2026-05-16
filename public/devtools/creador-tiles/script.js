@@ -625,6 +625,7 @@
       blockVision: document.getElementById('propBlockVision').checked,
       halfSolid: document.getElementById('propHalfSolid').checked,
       emission: parseFloat(document.getElementById('propEmission').value) || 0,
+      emissionColor: document.getElementById('propEmissionColor').value || '#ffffff',
       atlas: document.getElementById('propAtlas').value,
       defaultColor: currentColor,
     };
@@ -803,6 +804,7 @@
       document.getElementById('propBlockVision').checked = !!ent.blockVision;
       document.getElementById('propHalfSolid').checked = !!ent.halfSolid;
       document.getElementById('propEmission').value = ent.emission || 0;
+      document.getElementById('propEmissionColor').value = ent.emissionColor || '#ffffff';
       document.getElementById('canvasW').value = fw;
       document.getElementById('canvasH').value = fh;
 

@@ -200,6 +200,7 @@ async function buildAtlasGroup(groupName, entities) {
       halfBlock: entityData.halfBlock || false,
       halfSolid: entityData.halfSolid || false,
       emission: entityData.emission || 0,
+      emissionColor: entityData.emissionColor || '#ffffff',
       tileW: entityData.tileW || 1,
       tileH: entityData.tileH || 1,
       type: entityData.type || 'tile',

@@ -9,7 +9,21 @@ const Map = {
     const data = await res.json();
     migrateMapData(data);
     this.current = data;
-    return data;
+    // Si tiene tileSprites pero no lightmap, pedir generación
+    if (data.tileSprites && !data.lightmap) {
+      const name = path.split('/').pop().replace('.json', '');
+      try {
+        const r2 = await fetch('/api/mapas/' + encodeURIComponent(name) + '/recompute-lightmap', { method: 'POST' });
+        const result = await r2.json();
+        if (result.generated) {
+          const res3 = await fetch(path);
+          if (res3.ok) this.current = await res3.json();
+        }
+      } catch (e) {
+        console.warn('No se pudo generar lightmap:', e);
+      }
+    }
+    return this.current;
   },
 
   getGrid(layer) {
@@ -114,10 +128,19 @@ const Map = {
   getLight(x, y) {
     const ix = Math.floor(x);
     const iy = Math.floor(y);
-    if (!this.current || !this.current.lightmap) return 1.0;
-    if (iy < 0 || iy >= this.current.lightmap.length) return 0.5;
-    if (ix < 0 || ix >= this.current.lightmap[iy].length) return 0.5;
-    return this.current.lightmap[iy][ix];
+    if (!this.current || !this.current.lightmap) return { r: 1, g: 1, b: 1 };
+    if (iy < 0 || iy >= this.current.lightmap.length) return { r: 0.5, g: 0.5, b: 0.5 };
+    if (ix < 0 || ix >= this.current.lightmap[iy].length) return { r: 0.5, g: 0.5, b: 0.5 };
+    const hex = this.current.lightmap[iy][ix];
+    if (typeof hex === 'number') return { r: hex, g: hex, b: hex };
+    if (typeof hex === 'string') {
+      return {
+        r: parseInt(hex.slice(1, 3), 16) / 255,
+        g: parseInt(hex.slice(3, 5), 16) / 255,
+        b: parseInt(hex.slice(5, 7), 16) / 255,
+      };
+    }
+    return { r: 1, g: 1, b: 1 };
   },
 };
 

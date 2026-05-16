@@ -128,6 +128,30 @@ function deleteEntity(entityId) {
   }
 }
 
+function hasEmissiveTiles(mapData) {
+  const w = mapData.width, h = mapData.height;
+  const cached = {};
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const layers = mapData.layers || {};
+      for (const layerName of ['estructura', 'terreno', 'objetos']) {
+        const grid = layers[layerName];
+        if (!grid || !grid[y]) continue;
+        const tileId = grid[y][x];
+        if (!tileId || tileId === 0) continue;
+        const entityId = mapData.tileSprites && mapData.tileSprites[tileId];
+        if (!entityId) continue;
+        if (cached[entityId] === undefined) {
+          const ed = loadEntityData(entityId);
+          cached[entityId] = ed && ed.emission && ed.emission > 0;
+        }
+        if (cached[entityId]) return true;
+      }
+    }
+  }
+  return false;
+}
+
 const MAPS_DIR = path.join(PUBLIC_DIR, 'maps');
 const MAPS_CONFIG = path.join(MAPS_DIR, 'config.json');
 
@@ -174,13 +198,43 @@ function hasLineOfSight(mapData, x1, y1, x2, y2) {
   return true;
 }
 
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return { r, g, b };
+}
+
+function rgbToHex(r, g, b) {
+  const toHex = v => Math.round(Math.max(0, Math.min(255, v * 255))).toString(16).padStart(2, '0');
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+function progressBar(label, current, total) {
+  const pct = Math.floor((current / total) * 100);
+  const filled = Math.floor(pct / 5);
+  const bar = '[' + '='.repeat(filled) + ' '.repeat(20 - filled) + ']';
+  process.stdout.write('\r' + label + ': ' + bar + ' ' + pct + '%');
+}
+
 function computeLightmap(mapData) {
   const w = mapData.width, h = mapData.height;
-  const ambient = 0.4;
-  const lightmap = Array.from({ length: h }, () => Array(w).fill(ambient));
+  const ambient = 0.04;
+  const maxRadius = 10;
+  const bounceRadius = 4;
+  const bounceFactors = [0.4, 0.2, 0.1];
+  const bounceThreshold = 0.3;
 
+  // Inicializar lightmap RGB con ambient
+  const lightmap = Array.from({ length: h }, () =>
+    Array.from({ length: w }, () => ({ r: ambient, g: ambient, b: ambient }))
+  );
+
+  // Encontrar emisores con color
   const emitters = [];
-  const emissionCache = {};
+  const emitterCache = {};
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -192,34 +246,117 @@ function computeLightmap(mapData) {
         if (!tileId || tileId === 0) continue;
         const entityId = mapData.tileSprites && mapData.tileSprites[tileId];
         if (!entityId) continue;
-        if (emissionCache[entityId] === undefined) {
+        if (emitterCache[entityId] === undefined) {
           const ed = loadEntityData(entityId);
-          emissionCache[entityId] = ed ? (ed.emission || 0) : 0;
+          if (ed && ed.emission && ed.emission > 0) {
+            const color = ed.emissionColor ? hexToRgb(ed.emissionColor) : { r: 1, g: 1, b: 1 };
+            emitterCache[entityId] = { intensity: ed.emission, color };
+          } else {
+            emitterCache[entityId] = null;
+          }
         }
-        if (emissionCache[entityId] > 0) {
-          emitters.push({ x, y, emission: emissionCache[entityId] });
+        const cached = emitterCache[entityId];
+        if (cached) {
+          emitters.push({ x, y, intensity: cached.intensity, color: cached.color });
         }
       }
     }
   }
 
-  if (emitters.length === 0) return lightmap;
+  if (emitters.length === 0) {
+    // Sin emisores → lightmap full bright
+    return Array.from({ length: h }, () => Array(w).fill('#ffffff'));
+  }
 
-  const maxRadius = 10;
+  console.log('');
+  const totalTiles = w * h;
+
+  // === Directo: rayos desde cada emisor ===
   for (let y = 0; y < h; y++) {
+    progressBar('Directo', y * w, totalTiles);
     for (let x = 0; x < w; x++) {
-      let total = ambient;
+      let totalR = ambient, totalG = ambient, totalB = ambient;
       for (const e of emitters) {
         const dx = x - e.x, dy = y - e.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist <= maxRadius && hasLineOfSight(mapData, e.x, e.y, x, y)) {
-          total += e.emission / (dist * 0.4 + 0.5);
+          const atten = e.intensity / (dist * 0.4 + 0.5);
+          totalR += e.color.r * atten;
+          totalG += e.color.g * atten;
+          totalB += e.color.b * atten;
         }
       }
-      lightmap[y][x] = Math.min(1, total);
+      lightmap[y][x] = {
+        r: clamp01(totalR),
+        g: clamp01(totalG),
+        b: clamp01(totalB),
+      };
     }
   }
-  return lightmap;
+  progressBar('Directo', totalTiles, totalTiles);
+  console.log('');
+
+  // === Rebotes 1..3 ===
+  for (let bounce = 0; bounce < bounceFactors.length; bounce++) {
+    const factor = bounceFactors[bounce];
+    const label = 'Rebote ' + (bounce + 1);
+    // Nueva capa acumuladora para este rebote
+    const bounceAccum = Array.from({ length: h }, () =>
+      Array.from({ length: w }, () => ({ r: 0, g: 0, b: 0 }))
+    );
+
+    let processed = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        processed++;
+        progressBar(label, processed, totalTiles);
+        const src = lightmap[y][x];
+        const intensity = (src.r + src.g + src.b) / 3;
+        if (intensity < bounceThreshold) continue;
+
+        for (let dy = -bounceRadius; dy <= bounceRadius; dy++) {
+          for (let dx = -bounceRadius; dx <= bounceRadius; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > bounceRadius) continue;
+            if (!hasLineOfSight(mapData, x, y, nx, ny)) continue;
+
+            const atten = factor / (dist * 0.5 + 0.5);
+            bounceAccum[ny][nx].r += src.r * atten;
+            bounceAccum[ny][nx].g += src.g * atten;
+            bounceAccum[ny][nx].b += src.b * atten;
+          }
+        }
+      }
+    }
+
+    // Acumular y clamar
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        lightmap[y][x].r = clamp01(lightmap[y][x].r + bounceAccum[y][x].r);
+        lightmap[y][x].g = clamp01(lightmap[y][x].g + bounceAccum[y][x].g);
+        lightmap[y][x].b = clamp01(lightmap[y][x].b + bounceAccum[y][x].b);
+      }
+    }
+    progressBar(label, totalTiles, totalTiles);
+    console.log('');
+  }
+
+  // Clamp final [0.01, 1.0] y convertir a hex
+  const hexResult = Array.from({ length: h }, () => Array(w).fill('#000000'));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const r = Math.max(0.01, clamp01(lightmap[y][x].r));
+      const g = Math.max(0.01, clamp01(lightmap[y][x].g));
+      const b = Math.max(0.01, clamp01(lightmap[y][x].b));
+      hexResult[y][x] = rgbToHex(r, g, b);
+    }
+  }
+
+  console.log('Lightmap generado: ' + w + 'x' + h);
+  return hexResult;
 }
 
 function saveMapFile(name, data) {
@@ -324,6 +461,28 @@ const server = http.createServer((req, res) => {
     }).catch(err => {
       sendJson(res, 400, { error: err.message });
     });
+    return;
+  }
+
+  if (method === 'POST' && url.startsWith('/api/mapas/') && url.endsWith('/recompute-lightmap')) {
+    const mapName = url.replace('/api/mapas/', '').replace('/recompute-lightmap', '');
+    if (!mapName) return sendJson(res, 400, { error: 'name requerido' });
+    try {
+      const filePath = path.join(MAPS_DIR, mapName + '.json');
+      if (!fs.existsSync(filePath)) return sendJson(res, 404, { error: 'Mapa no encontrado' });
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const hasEmitters = hasEmissiveTiles(data);
+      if (!hasEmitters) {
+        delete data.lightmap;
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        return sendJson(res, 200, { ok: true, generated: false, reason: 'sin emisores' });
+      }
+      data.lightmap = computeLightmap(data);
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      sendJson(res, 200, { ok: true, generated: true });
+    } catch (err) {
+      sendJson(res, 500, { error: err.message });
+    }
     return;
   }
 
