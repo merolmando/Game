@@ -171,10 +171,11 @@ const Renderer = {
           }
         }
 
+        const lightFloor = Map.getLight(tileX, tileY);
         const fi = ((y - halfH) * SCREEN_W + x) * 4;
-        fdata[fi] = r;
-        fdata[fi + 1] = g;
-        fdata[fi + 2] = b;
+        fdata[fi] = Math.floor(r * lightFloor);
+        fdata[fi + 1] = Math.floor(g * lightFloor);
+        fdata[fi + 2] = Math.floor(b * lightFloor);
         fdata[fi + 3] = 255;
       }
     }
@@ -190,6 +191,7 @@ const Renderer = {
       const hasTileSprites = Map.current.tileSprites;
       const entityId = hasTileSprites ? Map.current.tileSprites[ray.tileType] : null;
       const sprite = entityId ? Sprite.getEntity(entityId) : null;
+      const light = Map.getLight(ray.mapX, ray.mapY);
 
       if (spriteAvailable && sprite) {
         const texX = Math.floor(ray.wallX * sprite.frameW);
@@ -198,14 +200,15 @@ const Renderer = {
           sprite.x + texX, sprite.y, 1, sprite.frameH,
           x, ray.drawStart, 1, ray.drawEnd - ray.drawStart
         );
-        if (ray.side === 1) {
-          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        const darkness = 1 - light + (ray.side === 1 ? 0.15 : 0);
+        if (darkness > 0) {
+          ctx.fillStyle = `rgba(0,0,0,${Math.min(1, darkness)})`;
           ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
         }
       } else {
         const info = Map.current.tileColors[ray.tileType];
         const baseColor = info ? info.color : '#888';
-        const shade = ray.side === 1 ? 0.6 : 1;
+        const shade = light * (ray.side === 1 ? 0.6 : 1);
         ctx.fillStyle = this.shadeColor(baseColor, shade);
         ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
       }
@@ -217,6 +220,7 @@ const Renderer = {
     for (const obj of billboards) {
       let entityId = obj.entityId;
       if (!entityId && Map.current.tileSprites) entityId = Map.current.tileSprites[obj.tileId];
+      const light = Map.getLight(obj.bx, obj.by);
 
       for (let stripe = obj.drawStartX; stripe <= obj.drawEndX; stripe++) {
         if (stripe < 0 || stripe >= SCREEN_W) continue;
@@ -237,12 +241,16 @@ const Renderer = {
                 sx, frame.sy, 1, frame.sh,
                 stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY
               );
+              if (light < 1) {
+                ctx.fillStyle = `rgba(0,0,0,${1 - light})`;
+                ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
+              }
             }
           }
         } else {
           const colorId = obj.tileId || 1;
           const info = Map.current.tileColors ? Map.current.tileColors[colorId] : null;
-          ctx.fillStyle = info ? info.color : '#888';
+          ctx.fillStyle = this.shadeColor(info ? info.color : '#888', light);
           ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
         }
       }
@@ -315,6 +323,8 @@ const Renderer = {
         let entityId = null;
         if (map.tileSprites) entityId = map.tileSprites[tile];
 
+        const light = Map.getLight(col, row);
+
         if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
           const info = Sprite.getEntity(entityId);
           const fw = info.frameW || ts;
@@ -327,9 +337,13 @@ const Renderer = {
           } else {
             Sprite.draw(ctx, entityId, sx, dy, fw, displayH, 0);
           }
+          if (light < 1) {
+            ctx.fillStyle = `rgba(0,0,0,${1 - light})`;
+            ctx.fillRect(sx, dy, fw, displayH);
+          }
         } else {
           const info = map.tileColors ? map.tileColors[tile] : null;
-          ctx.fillStyle = info ? info.color : '#000';
+          ctx.fillStyle = this.shadeColor(info ? info.color : '#000', light);
           ctx.fillRect(sx, sy, ts, ts);
         }
       }

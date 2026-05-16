@@ -624,6 +624,7 @@
       halfBlock: document.getElementById('propHalfBlock').checked,
       blockVision: document.getElementById('propBlockVision').checked,
       halfSolid: document.getElementById('propHalfSolid').checked,
+      emission: parseFloat(document.getElementById('propEmission').value) || 0,
       atlas: document.getElementById('propAtlas').value,
       defaultColor: currentColor,
     };
@@ -801,6 +802,7 @@
       document.getElementById('propHalfBlock').checked = !!ent.halfBlock;
       document.getElementById('propBlockVision').checked = !!ent.blockVision;
       document.getElementById('propHalfSolid').checked = !!ent.halfSolid;
+      document.getElementById('propEmission').value = ent.emission || 0;
       document.getElementById('canvasW').value = fw;
       document.getElementById('canvasH').value = fh;
 

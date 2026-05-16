@@ -85,6 +85,8 @@ const Raycaster = {
         tileType,
         perpDist,
         wallX,
+        mapX,
+        mapY,
       };
     }
   },

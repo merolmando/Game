@@ -110,6 +110,15 @@ const Map = {
   getHeight() {
     return this.current ? this.current.height : 0;
   },
+
+  getLight(x, y) {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    if (!this.current || !this.current.lightmap) return 0.5;
+    if (iy < 0 || iy >= this.current.lightmap.length) return 0.5;
+    if (ix < 0 || ix >= this.current.lightmap[iy].length) return 0.5;
+    return this.current.lightmap[iy][ix];
+  },
 };
 
 function _isWallEntity(entityId) {

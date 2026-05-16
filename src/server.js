@@ -148,7 +148,62 @@ function listMaps() {
   return result;
 }
 
+function loadEntityData(entityId) {
+  const entityPath = path.join(ENTIDADES_DIR, entityId, 'entity.js');
+  if (!fs.existsSync(entityPath)) return null;
+  return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+}
+
+function computeLightmap(mapData) {
+  const w = mapData.width, h = mapData.height;
+  const ambient = 0.2;
+  const lightmap = Array.from({ length: h }, () => Array(w).fill(ambient));
+
+  const emitters = [];
+  const emissionCache = {};
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const layers = mapData.layers || {};
+      for (const layerName of ['estructura', 'terreno', 'objetos']) {
+        const grid = layers[layerName];
+        if (!grid || !grid[y]) continue;
+        const tileId = grid[y][x];
+        if (!tileId || tileId === 0) continue;
+        const entityId = mapData.tileSprites && mapData.tileSprites[tileId];
+        if (!entityId) continue;
+        if (emissionCache[entityId] === undefined) {
+          const ed = loadEntityData(entityId);
+          emissionCache[entityId] = ed ? (ed.emission || 0) : 0;
+        }
+        if (emissionCache[entityId] > 0) {
+          emitters.push({ x, y, emission: emissionCache[entityId] });
+        }
+      }
+    }
+  }
+
+  if (emitters.length === 0) return lightmap;
+
+  const maxRadius = 10;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let total = ambient;
+      for (const e of emitters) {
+        const dx = x - e.x, dy = y - e.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= maxRadius) {
+          total += e.emission / (dist * 0.4 + 0.5);
+        }
+      }
+      lightmap[y][x] = Math.min(1, total);
+    }
+  }
+  return lightmap;
+}
+
 function saveMapFile(name, data) {
+  data.lightmap = computeLightmap(data);
   const filePath = path.join(MAPS_DIR, name + '.json');
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
