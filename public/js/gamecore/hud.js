@@ -41,7 +41,10 @@ const HUD = {
   resolveRef(ref) {
     if (!ref || typeof ref !== 'string') return 0;
     const parts = ref.split('.');
-    let val = window;
+    const _g = parts.length > 1
+      ? { Player, Map, Renderer, Raycaster, Camera, Sprite, Input, HUD }
+      : window;
+    let val = _g;
     for (const part of parts) {
       if (val === undefined || val === null) return 0;
       val = val[part];

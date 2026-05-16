@@ -278,7 +278,7 @@
       return;
     }
 
-    const layersToDraw = [currentLayer];
+    let layersToDraw = [currentLayer];
     if (currentLayer === 'estructura') layersToDraw.unshift('terreno');
     if (isEntityLayer) layersToDraw = ['terreno', 'estructura'];
 
