@@ -4,26 +4,20 @@ const SCREEN_W = 640;
 const SCREEN_H = 480;
 
 const Raycaster = {
-  // Lanza un rayo por cada columna de píxeles de la pantalla.
-  // Implementa el algoritmo DDA (Digital Differential Analyzer)
-  // usado originalmente en Wolfenstein 3D.
+  zBuffer: new Float64Array(SCREEN_W),
+
   cast(rays, player) {
     for (let x = 0; x < rays.length; x++) {
-      // Coordenada en el plano de la cámara: -1 a 1.
       const cameraX = 2 * x / SCREEN_W - 1;
-      // Dirección del rayo actual.
       const rayDirX = player.dirX + player.planeX * cameraX;
       const rayDirY = player.dirY + player.planeY * cameraX;
 
-      // Celda del mapa donde comienza el rayo.
       let mapX = Math.floor(player.x);
       let mapY = Math.floor(player.y);
 
-      // Distancia que recorre el rayo para avanzar una celda completa.
       const deltaDistX = rayDirX === 0 ? 1e30 : Math.abs(1 / rayDirX);
       const deltaDistY = rayDirY === 0 ? 1e30 : Math.abs(1 / rayDirY);
 
-      // Dirección del paso (-1 o 1) y distancia inicial al primer borde de celda.
       let stepX, stepY;
       let sideDistX, sideDistY;
 
@@ -43,9 +37,8 @@ const Raycaster = {
         sideDistY = (mapY + 1 - player.y) * deltaDistY;
       }
 
-      // Bucle DDA: avanza el rayo celda por celda hasta chocar con una pared.
       let hit = 0;
-      let side; // 0 = pared vertical (E/W), 1 = pared horizontal (N/S).
+      let side;
 
       while (hit === 0) {
         if (sideDistX < sideDistY) {
@@ -57,26 +50,23 @@ const Raycaster = {
           mapY += stepY;
           side = 1;
         }
-        if (Map.isSolid(mapX, mapY)) hit = 1;
+        if (Map.isWall(mapX, mapY)) hit = 1;
       }
 
-      // Distancia perpendicular: evita el efecto "ojo de pez".
       let perpDist;
       if (side === 0) {
         perpDist = (mapX - player.x + (1 - stepX) / 2) / rayDirX;
       } else {
         perpDist = (mapY - player.y + (1 - stepY) / 2) / rayDirY;
       }
+      this.zBuffer[x] = perpDist;
 
-      // Altura de la línea a dibujar en pantalla (más lejos = más pequeña).
       const lineHeight = Math.floor(SCREEN_H / perpDist);
       const drawStart = Math.max(0, -lineHeight / 2 + SCREEN_H / 2);
       const drawEnd = Math.min(SCREEN_H - 1, lineHeight / 2 + SCREEN_H / 2);
 
-      // Tipo de tile que golpeó el rayo (para el color de la pared).
       const tileType = Map.getTile(mapX, mapY, 'estructura');
 
-      // Coordenada horizontal exacta donde el rayo golpeó la pared (0-1).
       let wallX;
       if (side === 0) {
         wallX = player.y + perpDist * rayDirY;
@@ -94,5 +84,64 @@ const Raycaster = {
         wallX,
       };
     }
+  },
+
+  getBillboards(player) {
+    const billboards = [];
+
+    const grid = Map.getGrid('objetos');
+    if (grid) {
+      for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+          const tileId = grid[row][col];
+          if (tileId === 0) continue;
+          this._addBillboard(billboards, player, col + 0.5, row + 0.5, tileId, null);
+        }
+      }
+    }
+
+    if (Map.current.characters) {
+      for (const ch of Map.current.characters) {
+        this._addBillboard(billboards, player, ch.x, ch.y, null, ch.entityId);
+      }
+    }
+
+    if (Map.current.enemies) {
+      for (const en of Map.current.enemies) {
+        this._addBillboard(billboards, player, en.x, en.y, null, en.entityId);
+      }
+    }
+
+    billboards.sort((a, b) => b.dist - a.dist);
+    return billboards;
+  },
+
+  _addBillboard(list, player, bx, by, tileId, entityId) {
+    const spriteX = bx - player.x;
+    const spriteY = by - player.y;
+
+    const invDet = 1 / (player.planeX * player.dirY - player.dirX * player.planeY);
+    const transformX = invDet * (player.dirY * spriteX - player.dirX * spriteY);
+    const transformY = invDet * (-player.planeY * spriteX + player.planeX * spriteY);
+
+    if (transformY <= 0) return;
+
+    const screenX = Math.floor(SCREEN_W / 2 * (1 + transformX / transformY));
+    const height = Math.abs(Math.floor(SCREEN_H / transformY));
+    const width = height;
+
+    list.push({
+      bx, by,
+      tileId,
+      entityId,
+      dist: transformY,
+      screenX,
+      width,
+      height,
+      drawStartY: Math.max(0, -height / 2 + SCREEN_H / 2),
+      drawEndY: Math.min(SCREEN_H - 1, height / 2 + SCREEN_H / 2),
+      drawStartX: Math.max(0, -width / 2 + screenX),
+      drawEndX: Math.min(SCREEN_W - 1, width / 2 + screenX),
+    });
   },
 };

@@ -18,16 +18,18 @@
       "title": "Hito 1 — El Núcleo",
       "description": "Plantilla de personaje, movimiento básico, atlas de tiles y sprites.",
       "status": "in-progress",
-      "progress": 35,
+      "progress": 70,
       "tasks": [
         { "title": "Diseñar plantilla de personaje", "status": "done" },
         { "title": "Crear atlas de tiles", "status": "done" },
-        { "title": "Implementar movimiento básico", "status": "in-progress" },
-        { "title": "Sistema de sprites del jugador", "status": "pending" },
+        { "title": "Implementar movimiento básico", "status": "done" },
+        { "title": "Sistema de sprites del jugador", "status": "done" },
         { "title": "Cargar mapas desde JSON", "status": "done" },
-        { "title": "Cámara y viewport", "status": "in-progress" },
-        { "title": "Detección de colisiones", "status": "pending" },
-        { "title": "Transiciones entre mapas", "status": "pending" }
+        { "title": "Cámara y viewport", "status": "done" },
+        { "title": "Detección de colisiones (circular)", "status": "done" },
+        { "title": "Transiciones entre mapas", "status": "done" },
+        { "title": "Piso texturizado con floor-casting", "status": "done" },
+        { "title": "Sistema de capas estructura/terreno", "status": "done" }
       ]
     },
     {

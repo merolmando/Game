@@ -1,5 +1,6 @@
 const Renderer = {
   mode: '2d',
+  atlasImageData: null,
 
   init(canvas) {
     this.canvas = canvas;
@@ -7,6 +8,16 @@ const Renderer = {
     canvas.width = SCREEN_W;
     canvas.height = SCREEN_H;
     this.rays = new Array(SCREEN_W);
+  },
+
+  _buildAtlasData() {
+    if (!Sprite.loaded || !Sprite.atlas) return;
+    const c = document.createElement('canvas');
+    c.width = Sprite.atlas.width;
+    c.height = Sprite.atlas.height;
+    const cx = c.getContext('2d');
+    cx.drawImage(Sprite.atlas, 0, 0);
+    this.atlasImageData = cx.getImageData(0, 0, c.width, c.height);
   },
 
   render(player) {
@@ -19,8 +30,9 @@ const Renderer = {
     if (this.mode === 'ray') {
       Raycaster.cast(this.rays, player);
       this.drawCeiling(ctx);
-      this.drawFloor(ctx);
+      this.drawFloor(ctx, player);
       this.drawWalls(ctx, player);
+      this.drawObjects(ctx, player);
       this.drawMinimap(ctx, player);
     } else {
       this.draw2D(ctx, player);
@@ -40,9 +52,132 @@ const Renderer = {
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H / 2);
   },
 
-  drawFloor(ctx) {
-    ctx.fillStyle = '#2d2d44';
+  _drawSolidFloor(ctx, player) {
+    if (Map.current && Map.current.layers && Map.current.layers.terreno && player) {
+      const px = Math.floor(player.x);
+      const py = Math.floor(player.y);
+      const tileId = (Map.current.layers.terreno[py] && Map.current.layers.terreno[py][px]) || 0;
+      const info = Map.current.tileColors ? Map.current.tileColors[tileId] : null;
+      ctx.fillStyle = info ? info.color : '#2d2d44';
+    } else {
+      ctx.fillStyle = '#2d2d44';
+    }
     ctx.fillRect(0, SCREEN_H / 2, SCREEN_W, SCREEN_H / 2);
+  },
+
+  drawFloor(ctx, player) {
+    if (Sprite.loaded && Sprite.atlas && !this.atlasImageData) {
+      this._buildAtlasData();
+    }
+
+    const map = Map.current;
+    if (!map || !map.layers || !map.layers.terreno || !player) {
+      this._drawSolidFloor(ctx, player);
+      return;
+    }
+
+    if (!this.atlasImageData || !Sprite.atlasJson) {
+      this._drawSolidFloor(ctx, player);
+      return;
+    }
+
+    const terreno = map.layers.terreno;
+    const estructura = map.layers.estructura;
+    const tileSprites = map.tileSprites || {};
+    const tileColors = map.tileColors || {};
+    const tileSize = map.tileSize || 32;
+    const mapW = map.width;
+    const mapH = map.height;
+    const halfH = SCREEN_H / 2;
+
+    const floorImg = ctx.createImageData(SCREEN_W, halfH);
+    const fdata = floorImg.data;
+    const aData = this.atlasImageData;
+    const aW = aData.width;
+
+    for (let x = 0; x < SCREEN_W; x++) {
+      const ray = this.rays[x];
+      const wallBottom = Math.ceil(ray.drawEnd);
+      const startY = Math.max(halfH, wallBottom);
+
+      const cameraX = 2 * x / SCREEN_W - 1;
+      const rayDirX = player.dirX + player.planeX * cameraX;
+      const rayDirY = player.dirY + player.planeY * cameraX;
+
+      for (let y = startY; y < SCREEN_H; y++) {
+        const p = y - halfH;
+        if (p <= 0) continue;
+
+        const rowDist = halfH / p;
+
+        const floorX = player.x + rowDist * rayDirX;
+        const floorY = player.y + rowDist * rayDirY;
+
+        const tileX = Math.floor(floorX);
+        const tileY = Math.floor(floorY);
+
+        let r = 30, g = 30, b = 40;
+        let alpha = 255;
+
+        if (tileX >= 0 && tileX < mapW && tileY >= 0 && tileY < mapH) {
+          const texX = Math.abs(Math.floor((floorX - tileX) * tileSize)) % tileSize;
+          const texY = Math.abs(Math.floor((floorY - tileY) * tileSize)) % tileSize;
+
+          const tId = terreno[tileY][tileX];
+          if (tId !== 0) {
+            const eId = tileSprites[tId];
+            const sprite = eId ? Sprite.getEntity(eId) : null;
+            if (sprite) {
+              const atX = sprite.x + texX;
+              const atY = sprite.y + texY;
+              const idx = (atY * aW + atX) * 4;
+              r = aData.data[idx];
+              g = aData.data[idx + 1];
+              b = aData.data[idx + 2];
+              alpha = aData.data[idx + 3];
+            } else {
+              const info = tileColors[tId];
+              if (info) {
+                r = parseInt(info.color.slice(1, 3), 16);
+                g = parseInt(info.color.slice(3, 5), 16);
+                b = parseInt(info.color.slice(5, 7), 16);
+              }
+            }
+          }
+
+          if (estructura && alpha > 128) {
+            const estId = estructura[tileY][tileX];
+            if (estId !== 0) {
+              const eId2 = tileSprites[estId];
+              const sprite2 = eId2 ? Sprite.getEntity(eId2) : null;
+              if (sprite2 && sprite2.solid === false) {
+                const atX2 = sprite2.x + texX;
+                const atY2 = sprite2.y + texY;
+                const idx2 = (atY2 * aW + atX2) * 4;
+                const or2 = aData.data[idx2];
+                const og2 = aData.data[idx2 + 1];
+                const ob2 = aData.data[idx2 + 2];
+                const oa2 = aData.data[idx2 + 3];
+                if (oa2 > 128) {
+                  const fa = oa2 / 255;
+                  r = Math.floor(r * (1 - fa) + or2 * fa);
+                  g = Math.floor(g * (1 - fa) + og2 * fa);
+                  b = Math.floor(b * (1 - fa) + ob2 * fa);
+                }
+              }
+            }
+          }
+        }
+
+        const fi = ((y - halfH) * SCREEN_W + x) * 4;
+        fdata[fi] = r;
+        fdata[fi + 1] = g;
+        fdata[fi + 2] = b;
+        fdata[fi + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(floorImg, 0, halfH);
   },
 
   drawWalls(ctx, player) {
@@ -56,20 +191,56 @@ const Renderer = {
 
       if (spriteAvailable && sprite) {
         const texX = Math.floor(ray.wallX * sprite.frameW);
-        const shade = ray.side === 1 ? 0.6 : 1;
-        ctx.globalAlpha = shade;
         ctx.drawImage(
           Sprite.atlas,
           sprite.x + texX, sprite.y, 1, sprite.frameH,
           x, ray.drawStart, 1, ray.drawEnd - ray.drawStart
         );
-        ctx.globalAlpha = 1;
+        if (ray.side === 1) {
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
+        }
       } else {
         const info = Map.current.tileColors[ray.tileType];
         const baseColor = info ? info.color : '#888';
         const shade = ray.side === 1 ? 0.6 : 1;
         ctx.fillStyle = this.shadeColor(baseColor, shade);
         ctx.fillRect(x, ray.drawStart, 1, ray.drawEnd - ray.drawStart);
+      }
+    }
+  },
+
+  drawObjects(ctx, player) {
+    const billboards = Raycaster.getBillboards(player);
+    const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
+    for (const obj of billboards) {
+      let entityId = obj.entityId;
+      if (!entityId && Map.current.tileSprites) entityId = Map.current.tileSprites[obj.tileId];
+
+      for (let stripe = obj.drawStartX; stripe <= obj.drawEndX; stripe++) {
+        if (stripe < 0 || stripe >= SCREEN_W) continue;
+        if (Raycaster.zBuffer[stripe] < obj.dist) continue;
+
+        const texX = ((stripe - obj.screenX + obj.width / 2) / obj.width);
+        const texXClamped = Math.max(0, Math.min(1, texX));
+
+        if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
+          const sprite = Sprite.getEntity(entityId);
+          const frame = Sprite.getAnimFrame(entityId, this.dt || 0.016);
+          if (frame) {
+            const sx = frame.sx + Math.floor(texXClamped * frame.sw);
+            ctx.drawImage(
+              Sprite.atlas,
+              sx, frame.sy, 1, frame.sh,
+              stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY
+            );
+          }
+        } else {
+          const colorId = obj.tileId || 1;
+          const info = Map.current.tileColors ? Map.current.tileColors[colorId] : null;
+          ctx.fillStyle = info ? info.color : '#888';
+          ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
+        }
       }
     }
   },
@@ -245,6 +416,19 @@ const Renderer = {
       ctx.lineTo(px + player.facingX * 16, py + player.facingY * 16);
       ctx.stroke();
       ctx.lineWidth = 1;
+    }
+
+    if (spriteAvailable) {
+      for (const ch of Map.current.characters || []) {
+        const cx = Math.round(ch.x * ts - Camera.x);
+        const cy = Math.round(ch.y * ts - Camera.y);
+        Sprite.drawAnim(ctx, ch.entityId, cx - ts / 2, cy - ts, ts, ts, this.dt || 0.016);
+      }
+      for (const en of Map.current.enemies || []) {
+        const ex = Math.round(en.x * ts - Camera.x);
+        const ey = Math.round(en.y * ts - Camera.y);
+        Sprite.drawAnim(ctx, en.entityId, ex - ts / 2, ey - ts, ts, ts, this.dt || 0.016);
+      }
     }
   },
 

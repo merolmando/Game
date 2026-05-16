@@ -94,12 +94,12 @@ Cada mapa se define en un archivo JSON en `public/maps/`. Ejemplo (formato con c
 | `mode` | `"2d"` o `"ray"` — define el pipeline de renderizado |
 | `tileSize` | Tamaño en píxeles de cada tile (solo afecta modo 2D) |
 | `playerStart` | Posición inicial y dirección del jugador |
-| `layers` | Objeto con 5 capas: `cielo` (config) + `terreno`, `mundo`, `personajes`, `eventos` (grids 2D). Cada capa se renderiza en orden y el ID `0` significa "vacío" |
+| `layers` | Objeto con capas: `cielo` (config) + `terreno`, `estructura`, `objetos` (grids 2D). `terreno` = piso/base, `estructura` = paredes (sólidas para raycaster). Cada capa se renderiza en orden y el ID `0` significa "vacío". Mapas legacy con capa `mundo` se migran automáticamente dividiendo tiles entre `estructura` (paredes) y `terreno` (piso/agua/decoraciones) |
 | `tileSprites` | Mapa de ID tile → entityId del atlas de sprites (`public/entidades/`) |
 | `tileColors` | Mapa de ID → color, nombre y si es sólido (colisionable) |
 | `exits` | Lista de salidas: tile de activación, mapa destino y spawn |
 
-Mapas legacy con `tiles[][]` en vez de `layers` siguen funcionando (backward compat). El motor detecta si existe `current.layers` y, si no, usa `current.tiles` como capa `'mundo'`.
+Mapas legacy con `tiles[][]` en vez de `layers` siguen funcionando (backward compat). El motor detecta si existe `current.layers` y, si no, usa `current.tiles` y los divide entre `estructura` y `terreno`.
 
 ---
 
@@ -218,10 +218,14 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 | Método | Parámetros | Retorno | Descripción |
 |--------|-----------|---------|-------------|
 | `load(path)` | `path: string` — ruta al JSON (ej: `/maps/inicio.json`) | `Promise<object>` — datos parseados | Fetch + validación HTTP (`if (!res.ok)` lanza error). Setea `this.current` con los datos |
-| `getTile(x, y, layer)` | `x, y: number` — coordenadas float; `layer: string` — nombre de capa (`'mundo'` por defecto) | `number` — ID del tile (0-255) | Convierte a enteros con `Math.floor()`. Si está fuera de los límites del mapa o la capa no existe, retorna `1` (sólido por defecto) |
+| `getTile(x, y, layer)` | `x, y: number` — coordenadas float; `layer: string` — nombre de capa (`'estructura'` por defecto) | `number` — ID del tile (0-255) | Convierte a enteros con `Math.floor()`. Si está fuera de los límites del mapa o la capa no existe, retorna `1` (sólido por defecto) |
 | `getGrid(layer)` | `layer: string` — nombre de capa | `number[][] \| null` | Retorna el grid 2D de una capa. Para `cielo` retorna el objeto de configuración. Si la capa no existe o el mapa es legacy, retorna `null` |
-| `isSolid(x, y)` | `x, y: number` — coordenadas float | `boolean` | Consulta la capa `'mundo'`. Si ID=0 retorna `false` (vacío). Si el ID tiene `tileSprites`, consulta `entity.solid`. Si no, consulta `tileColors[id].solid`. Si no hay configuración, asume `true` |
-| `checkExits(px, py)` | `px, py: number` — posición del jugador en coordenadas float | `object \| null` | Centra al tile con `Math.floor(px + 0.5)`. Itera `exits[]` y devuelve el primero que coincida, o `null` si no hay salida en esa posición |
+| `isSolid(x, y)` | `x, y: number` — coordenadas float | `boolean` | Consulta `estructura` y `terreno`. Si **alguna** capa tiene un tile sólido en esa posición, retorna `true`. Usada para colisión del jugador (agua en `terreno` bloquea el paso) |
+| `isWall(x, y)` | `x, y: number` — coordenadas float | `boolean` | Consulta solo `estructura`. Retorna `true` solo si hay un tile sólido en esa capa. Usada por el raycaster (solo paredes bloquean rayos) |
+| `checkCircleCollision(cx, cy, radius)` | `cx, cy: number` — centro del círculo; `radius: number` — radio en tiles | `boolean` | Recorre tiles que el círculo toca. Para cada tile sólido, verifica overlap círculo vs rectángulo (distancia al punto más cercano del tile). Out-of-bounds = bloqueado |
+| `_tileInBounds(tx, ty)` | `tx, ty: number` — coordenadas enteras de tile | `boolean` | Verifica si un tile está dentro de los límites del mapa |
+| `_isTileSolid(id)` | `id: number` — ID numérico de tile | `boolean` | Helper: dado un ID de tile, consulta `entity.solid` del atlas si existe, fallback a `tileColors[id].solid`, default `true` |
+| `checkExits(px, py)` | `px, py: number` — posición del jugador | `object \| null` | Por distancia circular con radio 0.5: calcula el punto más cercano del tile de salida al centro del jugador. Si la distancia es < 0.5, activa la salida. No requiere estar centrado en el tile |
 
 **Estructura de `Map.current` (objeto cargado):**
 | Campo | Tipo | Descripción |
@@ -239,14 +243,13 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 
 **Sistema de capas:**
 ```
-Orden de render: Cielo → Terreno → Mundo → Personajes → Eventos (invisible/datos)
-- cielo:    Configuración de color sólido para el cielo (drawSky/drawCeiling)
-- terreno:  Suelo/base visual del mapa (ID 1 = pasto)
-- mundo:    Paredes y objetos sólidos (ID 2+). El raycaster y isSolid usan esta capa
-- personajes: NPCs y jugadores (ID 0 = vacío, reservado para futuros personajes)
-- eventos:  Zonas de trigger, spawns, etc. (ID 0 = vacío)
+Orden de render (modo 2D): Cielo → Terreno → Estructura → Objetos
+- cielo:      Configuración de color sólido para el cielo (drawSky/drawCeiling)
+- terreno:    Suelo/base visual del mapa. También contiene tiles colisionables como agua (bloquean al jugador via `isSolid()` pero no al raycaster)
+- estructura: Paredes y tiles sólidos. El raycaster usa `isWall()` sobre esta capa. Solo tiles con `solid: true` se renderizan como paredes
+- objetos:    Sprites billboard (muebles, decoraciones). Se renderizan en modo ray como billboards y en 2D como capa superior
 ```
-Mapas legacy con `tiles[][]` en vez de `layers` siguen funcionando: el motor usa `tiles` como capa `'mundo'`.
+Mapas legacy con `tiles[][]` o capa `mundo` se migran automáticamente: tiles de pared (entityId contiene "pared") van a `estructura`, el resto (pasto, agua, decoraciones) va a `terreno`.
 
 **Dependencias:** ninguna
 
@@ -270,6 +273,7 @@ Representa al jugador con estado completo. Se adapta automáticamente al modo de
 | `int` | `number` | `10` | Inteligencia (daño mágico) |
 | `level` | `number` | `1` | Nivel del jugador |
 | `spawnTimer` | `number` | `0` | Timer de protección al spawn. Mientras > 0, no se checkean exits. Se setea a 0.3s tras cargar un mapa y decrece cada frame |
+| `COLLISION_RADIUS` | `number` | `0.5` | Radio de colisión circular en tiles. Medio tile = entidad de 1 tile de diámetro |
 | `bobPhase` | `number` | `0` | Fase del seno para la animación de caminar (oscilación). Avanza a 8 rad/s mientras `moving===true`, decae a 6 rad/s² al soltar teclas |
 | `bobOffset` | `number` | `0` | Desplazamiento vertical en píxeles: `sin(bobPhase) * 2`. Rango ±2px |
 | `moving` | `boolean` | `false` | `true` si el jugador se está moviendo en el frame actual |
@@ -291,7 +295,8 @@ Representa al jugador con estado completo. Se adapta automáticamente al modo de
 | `update(dt)` | `dt: number` — delta time en segundos | `void` | Dispatcher: consulta `Map.current.mode` y delega a `update2D()` o `updateRay()` |
 | `update2D(dt)` | `dt: number` | `void` | Lee Input (WASD), calcula dx/dy cardinal (solo 0, ±1). Si hay dos ejes, normaliza con ×0.7071. Actualiza `facingX/facingY` priorizando horizontal sobre vertical. Llama a `move()`. Anima bob (fase +8 rad/s, offset = `sin(fase) * 2`) |
 | `updateRay(dt)` | `dt: number` | `void` | Lee Input: rotación (`rotate()`), forward/backward (`move(dirX*move, dirY*move)`), strafe izquierda/derecha (`move(-dirY*move, dirX*move)`). Anima bob si hay movimiento |
-| `move(dx, dy)` | `dx, dy: number` — desplazamiento en tiles | `void` | Wall sliding: prueba colisión en X primero, luego en Y por separado. Si un eje está bloqueado, el otro aún se ejecuta |
+| `move(dx, dy)` | `dx, dy: number` — desplazamiento en tiles | `void` | Colisión circular con wall sliding: prueba la nueva posición X con `_circleBlocked()` (círculo de radio `COLLISION_RADIUS`), si no colisiona, aplica. Luego prueba Y con la X ya actualizada |
+| `_circleBlocked(cx, cy)` | `cx, cy: number` — centro del círculo | `boolean` | Retorna `true` si el círculo colisiona con tiles sólidos (via `Map.checkCircleCollision()`) o con algún NPC/enemigo (distancia < `COLLISION_RADIUS * 2`) |
 | `rotate(angle)` | `angle: number` — radianes a rotar (negativo = izquierda) | `void` | Matriz de rotación 2×2 sobre `dirX/dirY` y `planeX/planeY`. Fórmula: `newDirX = dirX*cos - dirY*sin`, `newDirY = dirX*sin + dirY*cos` (idem para plane) |
 
 **Animación bob:**
@@ -396,13 +401,15 @@ Implementa el raycasting clásico de Wolfenstein 3D: lanza un rayo por cada colu
    e. Calcular step y sideDist (distancia al primer borde)
    f. Bucle DDA:
       - Avanzar al siguiente borde de celda (X o Y, el que esté más cerca)
-      - Si la celda es sólida (Map.getTile > 0) → hit = 1, break
+      - Si la celda es una pared (Map.isWall()) → hit = 1, break
+      - Nota: isWall() solo chequea la capa 'estructura' con solid: true.
+        El agua y tiles decorativos NO detienen el rayo.
    g. Calcular perpDist (distancia perpendicular anti-fish-eye)
    h. Calcular lineHeight, drawStart, drawEnd
    i. Guardar ray = { drawStart, drawEnd, side, tileType, perpDist }
 ```
 
-**Dependencias:** `Map` (getTile), `SCREEN_W`, `SCREEN_H`
+**Dependencias:** `Map` (isWall), `SCREEN_W`, `SCREEN_H`
 
 ---
 
@@ -417,6 +424,7 @@ Bifurca entre pipeline 2D top-down y pipeline de raycaster pseudo-3D según `Map
 | `canvas` | `HTMLCanvasElement` | — | Referencia al canvas, seteada en `init()` |
 | `ctx` | `CanvasRenderingContext2D` | — | Contexto 2D del canvas |
 | `rays` | `object[]` | `new Array(SCREEN_W)` | Array prealocado para resultados del raycaster |
+| `atlasImageData` | `ImageData` | `null` | Pixel data del atlas completo para floor-casting. Se construye lazy en `_buildAtlasData()` |
 
 **Métodos:**
 | Método | Parámetros | Retorno | Descripción |
@@ -424,32 +432,36 @@ Bifurca entre pipeline 2D top-down y pipeline de raycaster pseudo-3D según `Map
 | `init(canvas)` | `canvas: HTMLCanvasElement` | `void` | Guarda referencia al canvas y su contexto 2D, setea `width/height = SCREEN_W/SCREEN_H`, prealoca `rays[]` |
 | `render(player)` | `player: Player` | `void` | Pipeline principal: limpia canvas, si `Map.current === null` retorna (guard contra crash), según `mode` delega a ray pipeline o `draw2D()`, y siempre dibuja `drawTransition()` |
 | `drawCeiling(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad superior. Lee color desde `layers.cielo.color` si existe; fallback a `#1a1a2e` |
-| `drawFloor(ctx)` | `ctx: CanvasRenderingContext2D` | `void` | Rellena la mitad inferior con `#2d2d44` (suelo) |
-| `drawWalls(ctx, player)` | `ctx, player` | `void` | Itera `rays[]`: por cada columna, obtiene el `tileType` golpeado. Si hay `tileSprites[type]` y el atlas está cargado, samplea 1px del atlas (`drawImage` escalado a altura de pared) con sombra por `globalAlpha` según `side`. Si no, usa `tileColors[type].color` con `shadeColor()` |
-| `drawMinimap(ctx, player)` | `ctx, player` | `void` | Dibuja minimapa en esquina inferior izquierda (escala 4px/tile) usando la capa `'mundo'`. Pinta todos los tiles con sus colores. Marca al jugador como círculo rojo con línea de dirección |
+| `drawFloor(ctx, player)` | `ctx, player` | `void` | Floor-casting texturizado: por cada columna/píxel abajo del horizonte, calcula coordenadas del mundo, lee tile de `terreno`, dibuja texel desde el atlas vía `ImageData`. Si hay atlas y estructura decorativa (tiles no-sólidos), los blend sobre el piso. Fallback a `_drawSolidFloor()` si no hay atlas |
+| `_drawSolidFloor(ctx, player)` | `ctx, player` | `void` | Fallback: rellena la mitad inferior con el color del tile de terreno donde está parado el jugador |
+| `_buildAtlasData()` | — | `void` | Renderiza el atlas completo en un canvas temporal y captura su `ImageData` para acceso pixel por pixel en floor-casting |
+| `drawWalls(ctx, player)` | `ctx, player` | `void` | Itera `rays[]`: por cada columna, obtiene el `tileType` golpeado. Si hay `tileSprites[type]` y el atlas está cargado, samplea 1px del atlas escalado a altura de pared. Las paredes Y-side (side === 1) se oscurecen con overlay `rgba(0,0,0,0.4)` en vez de `globalAlpha` (evita el efecto transparente). Si no hay atlas, usa `tileColors[type].color` con `shadeColor()` |
+| `drawMinimap(ctx, player)` | `ctx, player` | `void` | Dibuja minimapa en esquina inferior izquierda (escala 4px/tile) usando la capa `'estructura'`. Pinta todos los tiles con sus colores. Marca al jugador como círculo rojo con línea de dirección |
 | `drawSky(ctx)` | `ctx` | `void` | Rellena todo el canvas con `layers.cielo.color` (o `#1a1a2e` fallback). Se llama al inicio de `draw2D()` |
 | `drawLayer(ctx, layerName)` | `ctx, layerName` | `void` | Dibuja una capa del mapa con viewport culling. Para cada tile visible: si tiene `tileSprites[id]` dibuja el sprite del atlas (con animación si frames > 1). Si no, usa `tileColors[id].color`. Tile ID 0 se salta (vacío) |
-| `draw2D(ctx, player)` | `ctx, player` | `void` | Pipeline 2D: `drawSky()` → `drawLayer('terreno')` → `drawLayer('mundo')` → exits con brillo pulsante → jugador con sprite del atlas (o cuadrado azul fallback) + línea de dirección + bob |
+| `draw2D(ctx, player)` | `ctx, player` | `void` | Pipeline 2D: `drawSky()` → `drawLayer('terreno')` → `drawLayer('estructura')` → exits con brillo pulsante → jugador con sprite del atlas (o cuadrado azul fallback) + línea de dirección + bob |
 | `drawTransition(ctx)` | `ctx` | `void` | Dibuja overlay negro semitransparente sobre toda la pantalla con alpha de `Transition.getAlpha()`. Si alpha es 0, no dibuja nada |
 | `shadeColor(hex, factor)` | `hex: string` (ej `#4a7c3f`), `factor: number` (0-1) | `string` — color RGB | Parsea hex a RGB, multiplica cada canal por `factor`, clamp a 255. Ej: `shadeColor('#ff8800', 0.6)` → `'rgb(153,81,0)'` |
 
 **Pipeline ray (`drawCeiling + drawFloor + drawWalls + drawMinimap`):**
 ```
 1. drawCeiling: rectángulo lleno en mitad superior (color desde layers.cielo)
-2. drawFloor:   rectángulo lleno en mitad inferior
+2. drawFloor:   floor-casting texturizado con sprites del atlas (o color sólido fallback)
+                → por cada columna/píxel: calcula coordenada mundial, samplea tile del atlas
+                → overlay de tiles decorativos no-sólidos desde capa estructura
 3. drawWalls:   itera 640 rayos, dibuja una columna vertical por rayo
                 → sprite del atlas si hay tileSprites[type], sino color sólido
                 → texturizado: samplea 1px del atlas escalado a la altura de pared
-                → si side === 1, oscurece con globalAlpha 0.6
-4. drawMinimap: grid 4px/tile desde capa 'mundo' + jugador como punto rojo
+                → si side === 1, oscurece con overlay negro rgba(0,0,0,0.4)
+4. drawMinimap: grid 4px/tile desde capa 'estructura' + jugador como punto rojo
 ```
 
 **Pipeline 2D (`draw2D`):**
 ```
 1. Camera.update(player.x * ts, player.y * ts, mapPixelW, mapPixelH)
 2. drawSky() — cielo sólido desde layers.cielo
-3. drawLayer('terreno') — suelo/base (ID 1 = pasto, sprite del atlas)
-4. drawLayer('mundo') — paredes y objetos (ID 2+ del atlas)
+3. drawLayer('terreno') — suelo/base con sprites del atlas
+4. drawLayer('estructura') — paredes y objetos sólidos
 5. Exits: tile sprite + brillo pulsante dorado (rgba(255,215,0, pulse))
 6. Jugador: sprite del atlas (player) o cuadrado azul 20×20 fallback
             + línea de dirección blanca + offset bob vertical
@@ -503,8 +515,8 @@ Al pisar un tile de salida (`exits` en el JSON):
 ### Dual Mode
 Cada mapa tiene un `mode` que determina cómo se controla al jugador y cómo se renderiza la escena. El raycaster se mantiene intacto para modo `ray`. El modo `2d` añade un renderer top-down con cámara.
 
-### Wall Sliding (ambos modos)
-El movimiento se evalúa por separado en X e Y. Si solo un eje está bloqueado, el jugador se desliza a lo largo de la pared.
+### Wall Sliding con Colisión Circular (ambos modos)
+El movimiento se evalúa por separado en X e Y con colisión circular (radio 0.5 = entidad de 1 tile de diámetro). Si solo un eje está bloqueado, el jugador se desliza a lo largo de la pared. También colisiona circularmente con NPCs y enemigos (distancia entre centros < 1 tile).
 
 ---
 

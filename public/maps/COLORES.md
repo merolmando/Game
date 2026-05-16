@@ -1,43 +1,72 @@
-# 🗺️ Mapa de Colores — Placeholders
+# 🗺️ Mapa de Tiles — Sistema de Capas
 
-Cada tile ID representa un tipo de celda en el mapa. Los colores son placeholders visuales hasta que se implementen texturas reales desde un spritesheet.
+Cada tile ID representa un tipo de celda en el mapa. Los tiles se renderizan con sprites reales del atlas (`public/generated/atlas.png`), con fallback a colores sólidos si no hay atlas disponible.
 
 ---
 
-## ⬛ Tile 0 — Vacío (Sin color)
+## Sistema de Capas
+
+Los mapas usan 4 capas:
+
+| Capa | Propósito | Colisión | Render |
+|------|-----------|----------|--------|
+| `terreno` | Piso/base del mapa (pasto, agua, decoraciones) | `isSolid()` chequea tiles sólidos en esta capa (agua bloquea al jugador) | Floor-casting texturizado en modo ray, drawLayer en 2D |
+| `estructura` | Paredes y obstáculos verticales | `isWall()` solo para raycaster, `isSolid()` para colisión jugador | Raycaster DDA (paredes 3D) en modo ray, drawLayer en 2D |
+| `objetos` | Muebles, decoraciones, billboards | No tiene colisión | Billboards en modo ray, drawLayer en 2D |
+| `cielo` | Color del cielo/techo | — | drawCeiling en modo ray, drawSky en 2D |
+
+## Tiles Actuales
+
+### Tile 0 — Vacío
+- **ID:** 0
 - **Transitable:** Sí
 - **Descripción:** Celda vacía en cualquier capa. No se renderiza y no bloquea el paso.
 
-## 🟩 Tile 1 — Pasto (Verde `#4a7c3f`)
+### Tile 1 — Pasto
+- **ID:** 1
+- **Sprite:** `pasto` (verde `#4a7c3f`)
 - **Transitable:** Sí
-- **Descripción:** Suelo estándar del mundo exterior. El jugador puede caminar libremente.
-- **Futuro:** Reemplazar por sprite de pasto con variaciones.
+- **Capa:** `terreno`
+- **Descripción:** Suelo estándar del mundo exterior.
 
-## 🟫 Tile 2 — Pared (Marrón `#5c4033`)
+### Tile 2 — Pared de Piedra
+- **ID:** 2
+- **Sprite:** `pared_piedra` (marrón `#5c4033`)
 - **Transitable:** No
-- **Descripción:** Pared del mapa. Bloquea el paso y activa colisiones.
-- **Futuro:** Reemplazar por sprites de pared según el bioma (piedra, madera, etc.).
+- **Capa:** `estructura`
+- **Descripción:** Pared del mapa. Bloquea el paso y detiene los rayos del raycaster.
 
-## 🟨 Tile 3 — Puerta / Transición (Dorado `#b8860b`)
+### Tile 3 — Puerta / Transición
+- **ID:** 3
+- **Sprite:** `puerta` (dorado `#b8860b`)
 - **Transitable:** Sí
-- **Descripción:** Tile de salida. Al pisarlo se activa una transición visual (fade out/in) y se carga el mapa destino definido en `exits` del JSON.
-- **Futuro:** Animación de puerta con sprites.
+- **Capa:** `estructura` o `terreno`
+- **Descripción:** Tile de salida. Al pisarlo se activa una transición visual (fade out/in) y se carga el mapa destino.
 
-## 🟦 Tile 4 — Agua (Azul `#2e6da4`)
-- **Transitable:** No
-- **Descripción:** Agua superficial. Bloquea el paso.
-- **Futuro:** Animación de ondas con sprites, posiblemente navegable con barca.
+### Tile 4 — Agua
+- **ID:** 4
+- **Sprite:** `agua` (azul `#2e6da4`)
+- **Transitable:** No (colisión circular)
+- **Capa:** `terreno`
+- **Descripción:** Agua superficial. Bloquea el paso (vía `isSolid()`) pero NO es una pared (no detiene rayos del raycaster).
+
+### Tile 5+ — Variantes de pasto decorativo
+- **ID:** 5+
+- **Sprites:** `pasto_con_baldosas`, `pasto_con_hierbas`, `pasto_sencillo`
+- **Transitable:** Sí
+- **Capa:** `terreno`
+- **Descripción:** Variaciones visuales del pasto para decorar el suelo.
 
 ---
 
-## Cuándo y cómo se usan
+## Colisión Circular
 
-- En mapas con `mode: "2d"` se renderizan como cuadros de `tileSize × tileSize` px con la cámara siguiendo al jugador.
-- En mapas con `mode: "ray"` los colores se definen en el `tileColors` del JSON pero solo los tiles > 0 se renderizan como paredes en el Raycaster.
-- Los IDs pueden variar por mapa. Cada JSON define su propio `tileColors`.
+Jugador y NPCs tienen colisión circular con **radio 0.5** (medio tile = entidad de 1 tile de diámetro). La detección usa distancia círculo vs rectángulo para tiles, y distancia entre centros para entidades.
 
-## Cómo añadir un tile nuevo
+---
 
-1. Asignar un ID numérico nuevo en el array `tiles` del JSON.
-2. Añadir la entrada en `tileColors` con `color`, `name` y `solid`.
-3. Documentarlo aquí.
+## Migración Automática
+
+Mapas legacy con capa `mundo` se migran automáticamente al cargarse:
+- Tiles cuyo sprite contiene "pared" → `estructura`
+- Tiles de agua, pasto, puerta, decoraciones → `terreno`

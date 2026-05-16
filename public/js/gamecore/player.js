@@ -26,6 +26,7 @@ const Player = {
   // Keys que el jugador ha recolectado (para puertas bloqueadas).
   keys: [],
   hasKey(keyId) { return this.keys.includes(keyId); },
+  COLLISION_RADIUS: 0.5,
   // Animación de bob (oscilación al caminar).
   bobPhase: 0,
   bobOffset: 0,
@@ -42,12 +43,24 @@ const Player = {
     this.planeY = planeX * sin + planeY * cos;
   },
 
-  // Mueve al jugador comprobando colisiones por separado en X e Y.
+  _circleBlocked(cx, cy) {
+    const r = this.COLLISION_RADIUS;
+    if (Map.checkCircleCollision(cx, cy, r)) return true;
+    const entities = [...(Map.current.characters || []), ...(Map.current.enemies || [])];
+    const minDist2 = (r * 2) * (r * 2);
+    for (const e of entities) {
+      const dx = cx - e.x;
+      const dy = cy - e.y;
+      if (dx * dx + dy * dy < minDist2) return true;
+    }
+    return false;
+  },
+
   move(dx, dy) {
     const nx = this.x + dx;
     const ny = this.y + dy;
-    if (!Map.isSolid(nx, this.y)) this.x = nx;
-    if (!Map.isSolid(this.x, ny)) this.y = ny;
+    if (!this._circleBlocked(nx, this.y)) this.x = nx;
+    if (!this._circleBlocked(this.x, ny)) this.y = ny;
   },
 
   update(dt) {

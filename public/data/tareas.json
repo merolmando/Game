@@ -23,18 +23,18 @@
       "title": "Detección de colisiones con tiles",
       "description": "El jugador no debe atravesar paredes ni tiles sólidos.",
       "priority": "alta",
-      "status": "pending",
+      "status": "done",
       "effort": "5h",
-      "notes": "Implementar colisión basada en el mapa JSON (capa de colisiones)"
+      "notes": "Implementada colisión circular con radio 0.5. checkCircleCollision() con distancia círculo vs rectángulo. Separación isWall()/isSolid(). Colisión jugador↔NPC"
     },
     {
       "id": 4,
       "title": "Transiciones entre mapas",
       "description": "Al llegar al borde de un mapa, cargar el siguiente mapa.",
       "priority": "media",
-      "status": "pending",
+      "status": "done",
       "effort": "3h",
-      "notes": "Definir puntos de transición en el JSON del mapa"
+      "notes": "Fade out/in con carga asíncrona. checkExits() ahora por distancia circular."
     },
     {
       "id": 5,

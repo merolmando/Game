@@ -116,7 +116,7 @@
       }
     });
 
-    const layerNames = ['terreno', 'estructura', 'objetos', 'personajes', 'eventos'];
+    const layerNames = ['terreno', 'estructura', 'objetos', 'eventos'];
     layerNames.forEach(layer => {
       const grid = mapData.layers && mapData.layers[layer];
       if (!grid) return;
@@ -233,7 +233,9 @@
 
     const cellPx = zoom * ((mapData.tileSize || tileSize) / tileSize);
 
-    if ((currentLayer === 'estructura' || currentLayer === 'terreno') && showSky) {
+    const isEntityLayer = currentLayer === 'personajes' || currentLayer === 'enemigos';
+
+    if ((currentLayer === 'estructura' || currentLayer === 'terreno' || isEntityLayer) && showSky) {
       const sky = mapData.layers && mapData.layers.cielo;
       if (sky && sky.type === 'solid') {
         ctx.fillStyle = sky.color;
@@ -255,6 +257,7 @@
 
     const layersToDraw = [currentLayer];
     if (currentLayer === 'estructura') layersToDraw.unshift('terreno');
+    if (isEntityLayer) layersToDraw = ['terreno', 'estructura'];
 
     const drawnLayers = {};
     layersToDraw.forEach(l => {
@@ -311,7 +314,7 @@
       mapData.exits.forEach(e => {
         const ex = e.tileX * cellPx;
         const ey = e.tileY * cellPx;
-        const exitTileId = mapData.layers && mapData.layers.mundo ? mapData.layers.mundo[e.tileY]?.[e.tileX] : null;
+        const exitTileId = mapData.layers && mapData.layers.estructura ? mapData.layers.estructura[e.tileY]?.[e.tileX] : null;
         const entityId = exitTileId && mapData.tileSprites ? mapData.tileSprites[exitTileId] : null;
         const sprite = entityId ? atlasSprites[entityId] : null;
         if (atlasImg && sprite) {
@@ -352,6 +355,33 @@
         }
       });
     }
+
+    if (isEntityLayer) {
+      const entities = currentLayer === 'personajes' ? (mapData.characters || []) : (mapData.enemies || []);
+      entities.forEach(e => {
+        const ex = e.x * cellPx;
+        const ey = e.y * cellPx;
+        ctx.fillStyle = currentLayer === 'personajes' ? 'rgba(74,158,255,0.5)' : 'rgba(255,74,74,0.5)';
+        ctx.beginPath();
+        ctx.arc(ex, ey, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(e.entityId || '?', ex, ey - 10);
+        if (cellPx >= 24) {
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(ex - cellPx / 2, ey - cellPx / 2, cellPx, cellPx);
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.fillText('(' + e.x.toFixed(1) + ', ' + e.y.toFixed(1) + ')', ex, ey + 4);
+        }
+      });
+    }
   }
 
   function updateProperties() {
@@ -368,7 +398,13 @@
     sel.value = mapData.mode || '2d';
 
     renderDefaultMapIndicator();
-    showExits();
+    if (currentLayer === 'personajes' || currentLayer === 'enemigos') {
+      exitsContent.innerHTML = '';
+      showEntities();
+    } else {
+      propContent.innerHTML = '<p class="muted">Selecciona un tile en el mapa</p>';
+      showExits();
+    }
   }
 
   function showExits() {
@@ -422,11 +458,103 @@
     });
   }
 
+  function showEntities() {
+    exitsContent.innerHTML = '';
+    const isChars = currentLayer === 'personajes';
+    const entities = isChars ? (mapData.characters || []) : (mapData.enemies || []);
+    const label = isChars ? 'Personajes' : 'Enemigos';
+    if (entities.length === 0) {
+      propContent.innerHTML = '<p class="muted">Sin ' + label.toLowerCase() + '</p>'
+        + '<button id="btnAddEntity" class="tool-btn-sm" style="margin-top:0.5rem">+ A\u00F1adir ' + label.slice(0, -1) + '</button>';
+    } else {
+      let html = '';
+      entities.forEach((e, i) => {
+        html += '<div class="exit-card" data-entity="' + i + '">';
+        html += '<div class="exit-card-header">';
+        html += '<span class="exit-label-text">' + (e.entityId || '\u2014') + '</span>';
+        html += '</div>';
+        html += '<div class="exit-row"><span class="exit-label">Pos</span><span class="exit-value">(' + e.x.toFixed(1) + ', ' + e.y.toFixed(1) + ')</span></div>';
+        html += '<div class="exit-card-actions">';
+        html += '<span class="exit-edit" data-entity="' + i + '">Editar</span>';
+        html += '<span class="exit-del" data-entity="' + i + '">Eliminar</span>';
+        html += '</div></div>';
+      });
+      html += '<button id="btnAddEntity" class="tool-btn-sm" style="margin-top:0.5rem">+ A\u00F1adir ' + label.slice(0, -1) + '</button>';
+      propContent.innerHTML = html;
+    }
+
+    document.getElementById('btnAddEntity').addEventListener('click', () => {
+      openEntityModal(currentLayer, { entityId: '', x: 0.5, y: 0.5 }, -1);
+    });
+
+    document.querySelectorAll('.exit-del[data-entity]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const i = parseInt(el.dataset.entity);
+        const arr = isChars ? mapData.characters : mapData.enemies;
+        if (arr) arr.splice(i, 1);
+        showEntities();
+        render();
+      });
+    });
+
+    document.querySelectorAll('.exit-edit[data-entity], .exit-card[data-entity]').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('exit-del')) return;
+        const card = el.closest('.exit-card') || el;
+        const i = parseInt(card.dataset.entity);
+        const arr = isChars ? mapData.characters : mapData.enemies;
+        if (!isNaN(i) && arr && arr[i]) {
+          openEntityModal(currentLayer, arr[i], i);
+        }
+      });
+    });
+  }
+
+  function openEntityModal(layer, entityData, index) {
+    const isEdit = index >= 0;
+    const isChar = layer === 'personajes';
+    const label = isChar ? 'Personaje' : 'Enemigo';
+
+    const entityList = Object.keys(atlasSprites || {}).filter(k => {
+      const e = atlasSprites[k];
+      return e && (e.type === 'character' || !e.type);
+    }).sort();
+
+    const entityOpts = entityList.map(id =>
+      '<option value="' + id + '"' + (entityData.entityId === id ? ' selected' : '') + '>' + id + '</option>'
+    ).join('');
+
+    showModal((isEdit ? 'Editar ' : 'A\u00F1adir ') + label,
+      '<div class="modal-field"><label>Entidad</label><select id="fEntityId" style="width:100%">'
+        + '<option value="">Seleccionar...</option>' + entityOpts + '</select></div>' +
+      '<div class="modal-field"><label>Posici\u00F3n X</label><input type="number" id="fEntityX" value="' + entityData.x + '" step="0.1" min="0" max="' + (mapData ? mapData.width : 99) + '"></div>' +
+      '<div class="modal-field"><label>Posici\u00F3n Y</label><input type="number" id="fEntityY" value="' + entityData.y + '" step="0.1" min="0" max="' + (mapData ? mapData.height : 99) + '"></div>',
+      () => {
+        const entityId = document.getElementById('fEntityId').value;
+        const x = parseFloat(document.getElementById('fEntityX').value);
+        const y = parseFloat(document.getElementById('fEntityY').value);
+        if (!entityId) { alert('Seleccion\u00E1 una entidad'); return; }
+
+        const obj = { entityId, x, y };
+        const arr = isChar ? mapData.characters : mapData.enemies;
+        if (!arr) return;
+        if (isEdit && index >= 0) {
+          arr[index] = obj;
+        } else {
+          arr.push(obj);
+        }
+        showEntities();
+        render();
+      }
+    );
+  }
+
   function showTileProps(col, row) {
     if (!mapData) return;
     let html = '';
     html += '<div class="prop-row"><span class="prop-label">Tile</span><span class="prop-value">(' + col + ', ' + row + ')</span></div>';
-    ['mundo', 'terreno', 'personajes', 'eventos'].forEach(l => {
+    ['estructura', 'terreno', 'objetos', 'eventos'].forEach(l => {
       const id = getTileAt(l, col, row);
       const t = tilePalette.find(p => p.id === id);
       const name = t ? t.name : '\u2014';
@@ -465,15 +593,18 @@
       layers: {
         cielo: { type: 'solid', color: '#1a1a2e' },
         terreno: makeGrid(h || 20, w || 25),
-        mundo: makeGrid(h || 20, w || 25),
+        estructura: makeGrid(h || 20, w || 25),
+        objetos: makeGrid(h || 20, w || 25),
         personajes: makeGrid(h || 20, w || 25),
         eventos: makeGrid(h || 20, w || 25),
       },
       tileColors: tileColors,
       tileSprites: tileSprites,
       exits: [],
+      characters: [],
+      enemies: [],
     };
-    currentLayer = 'mundo';
+    currentLayer = 'estructura';
     selectedTile = tilePalette[0];
     renderPalette();
     selectTile(selectedTile);
@@ -487,22 +618,11 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       mapData = await res.json();
 
-      if (!mapData.layers) {
-        const h = mapData.height;
-        const w = mapData.width;
-        mapData.layers = {
-          cielo: { type: 'solid', color: '#1a1a2e' },
-          terreno: Array.from({ length: h }, () => Array(w).fill(0)),
-          mundo: mapData.tiles || Array.from({ length: h }, () => Array(w).fill(0)),
-          personajes: Array.from({ length: h }, () => Array(w).fill(0)),
-          eventos: Array.from({ length: h }, () => Array(w).fill(0)),
-        };
-        delete mapData.tiles;
-      }
+      migrateEditorMapData(mapData);
 
       remapMapIds();
       syncTileMetadataFromAtlas();
-      currentLayer = 'mundo';
+      currentLayer = 'estructura';
       updateProperties();
       render();
       renderPalette();
@@ -576,6 +696,17 @@
       return;
     }
 
+    if (currentLayer === 'personajes' || currentLayer === 'enemigos') {
+      const entities = currentLayer === 'personajes' ? (mapData.characters || []) : (mapData.enemies || []);
+      const existing = entities.findIndex(e => Math.floor(e.x) === col && Math.floor(e.y) === row);
+      if (existing >= 0) {
+        openEntityModal(currentLayer, entities[existing], existing);
+      } else {
+        openEntityModal(currentLayer, { entityId: '', x: col + 0.5, y: row + 0.5 }, -1);
+      }
+      return;
+    }
+
     clickTimeout = setTimeout(() => {
       if (selectedTile && selectedTile.id !== undefined) {
         setTileAt(currentLayer, col, row, selectedTile.id);
@@ -613,6 +744,7 @@
       tab.classList.add('active');
       currentLayer = tab.dataset.layer;
       render();
+      updateProperties();
     });
   });
 
@@ -684,21 +816,10 @@
           reader.onload = e => {
             try {
               mapData = JSON.parse(e.target.result);
-              if (!mapData.layers) {
-                const h = mapData.height;
-                const w = mapData.width;
-                mapData.layers = {
-                  cielo: { type: 'solid', color: '#1a1a2e' },
-                  terreno: Array.from({ length: h }, () => Array(w).fill(0)),
-                  mundo: mapData.tiles || Array.from({ length: h }, () => Array(w).fill(0)),
-                  personajes: Array.from({ length: h }, () => Array(w).fill(0)),
-                  eventos: Array.from({ length: h }, () => Array(w).fill(0)),
-                };
-                delete mapData.tiles;
-              }
+              migrateEditorMapData(mapData);
               remapMapIds();
               syncTileMetadataFromAtlas();
-              currentLayer = 'mundo';
+              currentLayer = 'estructura';
               updateProperties();
               render();
               renderPalette();
@@ -751,6 +872,16 @@
     if (!mapData || currentLayer === 'cielo') return;
     const { col, row } = getCanvasCoords(e);
     if (col < 0 || col >= mapData.width || row < 0 || row >= mapData.height) return;
+    if (currentLayer === 'personajes' || currentLayer === 'enemigos') {
+      const entities = currentLayer === 'personajes' ? (mapData.characters || []) : (mapData.enemies || []);
+      const existing = entities.findIndex(en => Math.floor(en.x) === col && Math.floor(en.y) === row);
+      if (existing >= 0) {
+        openEntityModal(currentLayer, entities[existing], existing);
+      } else {
+        openEntityModal(currentLayer, { entityId: '', x: col + 0.5, y: row + 0.5 }, -1);
+      }
+      return;
+    }
     const existing = (mapData.exits || []).findIndex(ex => ex.tileX === col && ex.tileY === row);
     if (existing >= 0) {
       openExitModal(mapData.exits[existing], existing);
@@ -964,6 +1095,32 @@
         });
       }
     }
+  }
+
+  function migrateEditorMapData(data) {
+    if (!data.layers) {
+      const h = data.height;
+      const w = data.width;
+      data.layers = {
+        cielo: { type: 'solid', color: '#1a1a2e' },
+        terreno: Array.from({ length: h }, () => Array(w).fill(0)),
+        estructura: data.tiles || Array.from({ length: h }, () => Array(w).fill(0)),
+        objetos: Array.from({ length: h }, () => Array(w).fill(0)),
+        personajes: Array.from({ length: h }, () => Array(w).fill(0)),
+        eventos: Array.from({ length: h }, () => Array(w).fill(0)),
+      };
+      delete data.tiles;
+    } else {
+      if (data.layers.mundo && !data.layers.estructura) {
+        data.layers.estructura = data.layers.mundo;
+        delete data.layers.mundo;
+      }
+      if (!data.layers.objetos) {
+        data.layers.objetos = Array.from({ length: data.height }, () => Array(data.width).fill(0));
+      }
+    }
+    if (!data.characters) data.characters = [];
+    if (!data.enemies) data.enemies = [];
   }
 
   async function init() {

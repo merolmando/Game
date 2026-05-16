@@ -226,6 +226,18 @@
         <li>El nombre completo sigue visible en el panel de detalle al seleccionar la entidad.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-16 — Colisión circular, piso texturizado, fix de paredes y separación de capas</h2>
+      <p><strong>Colisión circular:</strong> El jugador y NPCs ahora usan detección de colisión circular con radio 0.5 (medio tile = entidad de 1 tile de diámetro). Nueva función <code>Map.checkCircleCollision(cx, cy, radius)</code> que verifica overlap círculo vs rectángulo de cada tile. El jugador no puede atravesar NPCs/enemigos.</p>
+      <ul>
+        <li><strong>map.js</strong> — <code>checkCircleCollision()</code>, <code>isWall()</code> (solo estructura), <code>isSolid()</code> ahora chequea estructura + terreno, <code>checkExits()</code> por distancia circular, <code>_tileInBounds()</code>, <code>migrateMapData()</code> divide mundo en estructura/terreno.</li>
+        <li><strong>player.js</strong> — <code>COLLISION_RADIUS: 0.5</code>, <code>_circleBlocked()</code> (tiles + entidades), <code>move()</code> usa colisión circular con wall sliding.</li>
+      </ul>
+      <p><strong>Piso texturizado:</strong> Floor-casting con texturas reales del atlas en modo ray. Por cada píxel abajo del horizonte se calcula la coordenada mundial, se lee el tile de <code>terreno</code> y se dibuja el texel correspondiente del spritesheet via <code>ImageData</code>. Los tiles decorativos no-sólidos de <code>estructura</code> se blendan como overlay.</p>
+      <p><strong>Fix de paredes transparentes:</strong> Las paredes Y-side (norte-sur) usaban <code>ctx.globalAlpha = 0.6</code> para sombrear, lo que hacía la textura semi-transparente (se veía el fondo a través). Reemplazado por overlay <code>rgba(0,0,0,0.4)</code> — las paredes ahora se ven sólidas en todas las direcciones.</p>
+      <p><strong>Separación de capas:</strong> La capa legacy <code>mundo</code> ahora se divide automáticamente al cargar el mapa: tiles de pared van a <code>estructura</code> (solo estos detienen el raycaster), agua y decoraciones van a <code>terreno</code>. El agua bloquea al jugador (vía <code>isSolid()</code>) pero no se renderiza como pared.</p>
+      <p><strong>Documentación:</strong> Actualizados <code>README.md</code>, <code>gamecore/README.md</code>, <code>COLORES.md</code>, <code>tareas.json</code> y <code>hitos.json</code> reflejando los nuevos sistemas.</p>
+    </article>
   </main>
 
   <footer>

@@ -36,10 +36,13 @@ El sitio se divide en dos grandes vertientes:
 
 ## ✅ Estado Actual
 - [x] **Servidor base** con rutas, assets y vistas.
-- [x] **Motor GameCore**: Game loop, input, cámara 2D, raycaster DDA, renderer dual-mode (2D + ray), sistema de capas (cielo/terreno/mundo/personajes/eventos).
-- [x] **Atlas de sprites**: Sistema auto-generado desde `public/entidades/` con 5 entidades (player, pasto, pared_piedra, puerta, agua). Render texturizado en modo ray y 2D.
-- [x] **Mapas**: `inicio.json` (modo 2D) y `cueva.json` (modo ray) con capas y tile IDs donde 0 = vacío.
+- [x] **Motor GameCore**: Game loop, input, cámara 2D, raycaster DDA, renderer dual-mode (2D + ray), sistema de capas (cielo/terreno/estructura/objetos).
+- [x] **Atlas de sprites**: Sistema auto-generado desde `public/entidades/` con 8 entidades (player, pasto, pared_piedra, puerta, agua, pasto_con_baldosas, pasto_con_hierbas, pasto_sencillo). Render texturizado en modo ray y 2D.
+- [x] **Mapas**: `inicio.json` (modo 2D) y `cueva.json`, `bosque_inicial.json` (modo ray) con sistema de capas.
 - [x] **Transiciones**: Fade out/in entre mapas con carga asíncrona.
+- [x] **Colisión circular**: Jugador y NPCs con radio 0.5 (1 tile de diámetro). Colisión por separado en ejes X/Y para sliding. Detección círculo vs tile con distancia al rectángulo más cercano. Colisión jugador↔NPC por distancia entre centros.
+- [x] **Piso texturizado**: Floor-casting con texturas reales del atlas (pasto, pasto_con_baldosas, etc.) con perspectiva correcta. Fallback a color sólido si no hay atlas.
+- [x] **Sistema de capas separado**: `estructura` para paredes (sólidas, raycaster), `terreno` para piso/base con tiles colisionables (agua). `isWall()` y `isSolid()` separados.
 - [x] **API REST**: Endpoints para CRUD de entidades (`/api/entidades`) y mapas (`/api/mapas`) con persistencia en servidor y reconstrucción automática del atlas.
 - [x] **Creador de Tiles**: Editor pixel-art en `/desarrollo/herramientas/creador-tiles` con pincel, goma, bote, gotero, línea, rectángulo, undo/redo, soporte multi-frame, capas por entidad, preview en vivo y guardado directo al servidor.
 - [x] **Cortador de Spritesheets**: Herramienta en `/desarrollo/herramientas/cortador-texturas` que permite seleccionar rectángulos de una imagen subida, nombrarlos y guardarlos como entidades con sprite real. Snap a grilla, preview, Guardar Todo.
