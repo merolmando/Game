@@ -224,7 +224,8 @@ function computeLightmap(mapData) {
   const ambient = 0.04;
   const maxRadius = 10;
   const bounceRadius = 4;
-  const bounceFactors = [0.4, 0.2, 0.1];
+  const numBounces = mapData.lightBounces !== undefined ? mapData.lightBounces : 3;
+  const bounceFactors = Array.from({ length: numBounces }, (_, i) => 0.4 / Math.pow(2, i));
   const bounceThreshold = 0.3;
 
   // Inicializar lightmap RGB con ambient
@@ -296,7 +297,7 @@ function computeLightmap(mapData) {
   progressBar('Directo', totalTiles, totalTiles);
   console.log('');
 
-  // === Rebotes 1..3 ===
+  // === Rebotes ===
   for (let bounce = 0; bounce < bounceFactors.length; bounce++) {
     const factor = bounceFactors[bounce];
     const label = 'Rebote ' + (bounce + 1);

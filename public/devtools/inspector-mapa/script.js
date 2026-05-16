@@ -679,6 +679,7 @@
       exits: [],
       characters: [],
       enemies: [],
+      lightBounces: 3,
     };
     currentLayer = 'estructura';
     selectedTile = tilePalette[0];
@@ -963,6 +964,20 @@
   });
 
   document.getElementById('btnGuardar').addEventListener('click', saveMap);
+
+  document.getElementById('btnSettings').addEventListener('click', () => {
+    if (!mapData) return;
+    const current = mapData.lightBounces !== undefined ? mapData.lightBounces : 3;
+    showModal('Ajustes del Mapa',
+      '<div class="modal-field"><label>Rebotes de luz (0–5)</label>' +
+      '<input type="number" id="fLightBounces" value="' + current + '" min="0" max="5" style="width:80px"></div>' +
+      '<p style="font-size:0.75rem;color:#8b949e;margin-top:4px">0 = solo luz directa, 3 = recomendado</p>',
+      () => {
+        const v = parseInt(document.getElementById('fLightBounces').value);
+        if (!isNaN(v) && v >= 0 && v <= 5) mapData.lightBounces = v;
+      }
+    );
+  });
 
   document.getElementById('btnEliminar').addEventListener('click', async () => {
     if (!mapData) return;

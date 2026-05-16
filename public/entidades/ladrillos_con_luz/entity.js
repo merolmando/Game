@@ -12,7 +12,8 @@
   "halfBlock": false,
   "blockVision": true,
   "halfSolid": false,
-  "emission": 1,
+  "emission": 0.5,
+  "emissionColor": "#d4ff00",
   "atlas": "entidades",
   "defaultColor": "#ffd700"
 }
