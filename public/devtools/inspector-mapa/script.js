@@ -2,11 +2,15 @@
 
   let mapData = null;
   let selectedTile = null;
-  let currentLayer = 'mundo';
+  let currentLayer = 'estructura';
   let zoom = 1;
   let showGrid = true;
   let showSky = true;
   let tileSize = 32;
+  let mapList = [];
+  let defaultMapName = null;
+  let editingExitIndex = -1;
+  let clickTimeout = null;
 
   const canvas = document.getElementById('mapCanvas');
   const ctx = canvas.getContext('2d');
@@ -112,7 +116,7 @@
       }
     });
 
-    const layerNames = ['terreno', 'mundo', 'personajes', 'eventos'];
+    const layerNames = ['terreno', 'estructura', 'objetos', 'personajes', 'eventos'];
     layerNames.forEach(layer => {
       const grid = mapData.layers && mapData.layers[layer];
       if (!grid) return;
@@ -229,7 +233,7 @@
 
     const cellPx = zoom * ((mapData.tileSize || tileSize) / tileSize);
 
-    if ((currentLayer === 'mundo' || currentLayer === 'terreno') && showSky) {
+    if ((currentLayer === 'estructura' || currentLayer === 'terreno') && showSky) {
       const sky = mapData.layers && mapData.layers.cielo;
       if (sky && sky.type === 'solid') {
         ctx.fillStyle = sky.color;
@@ -250,7 +254,7 @@
     }
 
     const layersToDraw = [currentLayer];
-    if (currentLayer === 'mundo') layersToDraw.unshift('terreno');
+    if (currentLayer === 'estructura') layersToDraw.unshift('terreno');
 
     const drawnLayers = {};
     layersToDraw.forEach(l => {
@@ -302,7 +306,8 @@
       }
     }
 
-    if (currentLayer === 'mundo' && mapData.exits) {
+    if (currentLayer === 'estructura' && mapData.exits) {
+      const dirArrow = { up: '\u25B2', down: '\u25BC', left: '\u25C0', right: '\u25B6' };
       mapData.exits.forEach(e => {
         const ex = e.tileX * cellPx;
         const ey = e.tileY * cellPx;
@@ -315,13 +320,36 @@
           ctx.fillStyle = 'rgba(255,215,0,0.3)';
           ctx.fillRect(ex, ey, cellPx, cellPx);
         }
-        ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+        ctx.strokeStyle = e.locked ? 'rgba(248,81,73,0.7)' : 'rgba(255,215,0,0.7)';
         ctx.lineWidth = 2;
         ctx.strokeRect(ex, ey, cellPx, cellPx);
-        ctx.fillStyle = '#ffd700';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('EXIT', ex + cellPx / 2, ey + cellPx / 2 + 4);
+
+        if (cellPx >= 24) {
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold ' + Math.max(8, cellPx / 3) + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          const arrow = dirArrow[e.direction || 'up'] || '\u25B2';
+          ctx.fillText(arrow, ex + cellPx / 2, ey + 2);
+
+          if (e.label && cellPx >= 32) {
+            ctx.font = Math.max(7, cellPx / 4) + 'px sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 3;
+            ctx.fillText(e.label, ex + cellPx / 2, ey + cellPx / 2 + 2);
+            ctx.shadowBlur = 0;
+          }
+        }
+
+        if (e.locked) {
+          ctx.fillStyle = 'rgba(248,81,73,0.3)';
+          ctx.fillRect(ex + 2, ey + 2, cellPx - 4, cellPx - 4);
+          ctx.fillStyle = '#f85149';
+          ctx.font = 'bold ' + Math.max(10, cellPx / 2.5) + 'px sans-serif';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\uD83D\uDD12', ex + cellPx / 2, ey + cellPx / 2);
+        }
       });
     }
   }
@@ -330,13 +358,16 @@
     if (!mapData) {
       propContent.innerHTML = '<p class="muted">Carga o crea un mapa</p>';
       document.getElementById('mapSizeLabel').textContent = '\u2014';
+      document.getElementById('deleteMapGroup').style.display = 'none';
       return;
     }
+    document.getElementById('deleteMapGroup').style.display = '';
     document.getElementById('mapSizeLabel').textContent = mapData.width + 'x' + mapData.height + ' \u00B7 ' + mapData.mode;
 
     const sel = document.getElementById('selModo');
     sel.value = mapData.mode || '2d';
 
+    renderDefaultMapIndicator();
     showExits();
   }
 
@@ -345,22 +376,48 @@
       exitsContent.innerHTML = '<p class="muted">Sin salidas</p>';
       return;
     }
+    const dirArrow = { up: '\u25B2', down: '\u25BC', left: '\u25C0', right: '\u25B6' };
     let html = '';
     mapData.exits.forEach((e, i) => {
-      html += '<div class="exit-card">';
+      const dir = e.direction || 'up';
+      const arrow = dirArrow[dir] || '\u25B2';
+      const targetName = getMapNameFromTarget(e.target);
+      const exists = targetName ? mapList.some(m => (m.fileId || m.fileName.replace('.json', '')) === targetName) : true;
+      html += '<div class="exit-card" data-exit="' + i + '">';
+      html += '<div class="exit-card-header">';
+      html += '<span class="exit-arrow">' + arrow + '</span>';
+      html += '<span class="exit-label-text">' + (e.label || e.connectionId || targetName || '\u2014') + '</span>';
+      if (e.locked) html += '<span class="exit-locked">\uD83D\uDD12</span>';
+      html += '</div>';
       html += '<div class="exit-row"><span class="exit-label">Tile</span><span class="exit-value">(' + e.tileX + ', ' + e.tileY + ')</span></div>';
-      html += '<div class="exit-row"><span class="exit-label">Destino</span><span class="exit-value">' + (e.target || '\u2014') + '</span></div>';
-      html += '<div class="exit-row"><span class="exit-label">Spawn</span><span class="exit-value">(' + (e.spawnX || '\u2014') + ', ' + (e.spawnY || '\u2014') + ')</span></div>';
-      html += '<div class="exit-row"><span class="exit-del" data-exit="' + i + '">Eliminar</span></div>';
+      if (e.connectionId) {
+        html += '<div class="exit-row"><span class="exit-label">Conexi\u00F3n</span><span class="exit-value" style="color:#58a6ff">' + e.connectionId + '</span></div>';
+      }
+      html += '<div class="exit-row"><span class="exit-label">Destino</span><span class="exit-value">' + (targetName || '\u2014') + (targetName && !exists ? ' <span style="color:#f85149">(no existe)</span>' : '') + '</span></div>';
+      html += '<div class="exit-card-actions">';
+      html += '<span class="exit-edit" data-exit="' + i + '">Editar</span>';
+      html += '<span class="exit-del" data-exit="' + i + '">Eliminar</span>';
+      html += '</div>';
       html += '</div>';
     });
     exitsContent.innerHTML = html;
     exitsContent.querySelectorAll('.exit-del').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
         const i = parseInt(el.dataset.exit);
         mapData.exits.splice(i, 1);
         showExits();
         render();
+      });
+    });
+    exitsContent.querySelectorAll('.exit-card, .exit-edit').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('exit-del')) return;
+        const card = el.closest('.exit-card') || el;
+        const i = parseInt(card.dataset.exit);
+        if (!isNaN(i) && mapData.exits[i]) {
+          openExitModal(mapData.exits[i], i);
+        }
       });
     });
   }
@@ -468,6 +525,7 @@
       const result = await res.json();
       if (result.ok) {
         setSaveStatus('\u2705 Guardado: ' + name, '#3fb950');
+        loadMapList();
       } else {
         setSaveStatus('\u274C Error: ' + (result.error || 'desconocido'), '#f85149');
       }
@@ -509,6 +567,7 @@
 
   canvas.addEventListener('click', e => {
     if (!mapData) return;
+    clearTimeout(clickTimeout);
     const { col, row } = getCanvasCoords(e);
     if (col < 0 || col >= mapData.width || row < 0 || row >= mapData.height) return;
 
@@ -517,11 +576,13 @@
       return;
     }
 
-    if (selectedTile && selectedTile.id !== undefined) {
-      setTileAt(currentLayer, col, row, selectedTile.id);
-      render();
-      showTileProps(col, row);
-    }
+    clickTimeout = setTimeout(() => {
+      if (selectedTile && selectedTile.id !== undefined) {
+        setTileAt(currentLayer, col, row, selectedTile.id);
+        render();
+        showTileProps(col, row);
+      }
+    }, 250);
   });
 
   canvas.addEventListener('contextmenu', e => {
@@ -657,31 +718,260 @@
 
   document.getElementById('btnGuardar').addEventListener('click', saveMap);
 
+  document.getElementById('btnEliminar').addEventListener('click', async () => {
+    if (!mapData) return;
+    const name = (mapData.name || 'mapa').replace(/\s+/g, '_').toLowerCase();
+    if (!confirm('¿Eliminar el mapa "' + name + '" definitivamente?')) return;
+    try {
+      const res = await fetch('/api/mapas/' + encodeURIComponent(name), { method: 'DELETE' });
+      const result = await res.json();
+      if (result.ok) {
+        setSaveStatus('🗑️ Eliminado: ' + name, '#f85149');
+        mapData = null;
+        document.getElementById('deleteMapGroup').style.display = 'none';
+        updateProperties();
+        resizeCanvas();
+        render();
+        loadMapList();
+      } else {
+        alert('Error al eliminar: ' + (result.error || 'desconocido'));
+      }
+    } catch (err) {
+      alert('Error de red al eliminar');
+    }
+  });
+
   document.getElementById('btnAddExit').addEventListener('click', () => {
     if (!mapData) return;
-    showModal('A\u00F1adir Exit',
-      '<div class="modal-field"><label>Tile X</label><input type="number" id="fExitX" value="0" min="0" max="' + (mapData.width - 1) + '"></div>' +
-      '<div class="modal-field"><label>Tile Y</label><input type="number" id="fExitY" value="0" min="0" max="' + (mapData.height - 1) + '"></div>' +
-      '<div class="modal-field"><label>Mapa destino</label><input type="text" id="fExitTarget" value="/maps/"></div>' +
-      '<div class="modal-field"><label>Spawn X</label><input type="number" id="fExitSpawnX" value="2.5" step="0.1"></div>' +
-      '<div class="modal-field"><label>Spawn Y</label><input type="number" id="fExitSpawnY" value="2.5" step="0.1"></div>',
+    openExitModal(null);
+  });
+
+  canvas.addEventListener('dblclick', e => {
+    clearTimeout(clickTimeout);
+    if (!mapData || currentLayer === 'cielo') return;
+    const { col, row } = getCanvasCoords(e);
+    if (col < 0 || col >= mapData.width || row < 0 || row >= mapData.height) return;
+    const existing = (mapData.exits || []).findIndex(ex => ex.tileX === col && ex.tileY === row);
+    if (existing >= 0) {
+      openExitModal(mapData.exits[existing], existing);
+    } else {
+      openExitModal({ tileX: col, tileY: row, target: '', spawnX: 2.5, spawnY: 2.5, locked: false, keyId: null });
+    }
+  });
+
+  async function loadDefaultMap() {
+    try {
+      const res = await fetch('/api/mapas/default');
+      if (res.ok) {
+        const data = await res.json();
+        defaultMapName = data.defaultMap || 'inicio';
+      }
+    } catch {}
+  }
+
+  async function loadMapList() {
+    try {
+      const res = await fetch('/api/mapas');
+      if (res.ok) {
+        mapList = await res.json();
+      }
+    } catch {}
+  }
+
+  function renderDefaultMapIndicator() {
+    const el = document.getElementById('defaultMapLabel');
+    if (!mapData) { el.textContent = ''; return; }
+    const name = mapData.name || '';
+    if (defaultMapName && name.toLowerCase() === defaultMapName.toLowerCase()) {
+      el.innerHTML = '\u2605 <strong>Mapa inicial</strong>';
+      el.style.color = '#ffd700';
+    } else {
+      el.innerHTML = '\u2606 <a href="#" id="btnSetDefault" style="color:#8b949e;text-decoration:none">Mapa inicial</a>';
+      el.style.color = '#484f58';
+      const btn = document.getElementById('btnSetDefault');
+      if (btn) btn.addEventListener('click', async e => {
+        e.preventDefault();
+        try {
+          const fileId = (mapData.name || 'mapa').replace(/\s+/g, '_').toLowerCase();
+          const r = await fetch('/api/mapas/default', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ defaultMap: fileId }),
+          });
+          if (r.ok) {
+            defaultMapName = fileId;
+            renderDefaultMapIndicator();
+            setSaveStatus('\u2705 Mapa inicial actualizado', '#3fb950');
+          }
+        } catch {}
+      });
+    }
+  }
+
+  function getMapNameFromTarget(target) {
+    if (!target) return '';
+    return target.replace('/maps/', '').replace('.json', '');
+  }
+
+  function collectConnectionIds() {
+    const ids = new Set();
+    for (const m of mapList) {
+      if (!m.exits) continue;
+      for (const ex of m.exits) {
+        if (ex.connectionId) ids.add(ex.connectionId);
+      }
+    }
+    return Array.from(ids).sort();
+  }
+
+  async function resolveConnection(label) {
+    try {
+      const res = await fetch('/api/mapas/resolve-label?label=' + encodeURIComponent(label));
+      const data = await res.json();
+      return data;
+    } catch {
+      return { found: false };
+    }
+  }
+
+  function openExitModal(exitData, index) {
+    const isEdit = index !== undefined && index >= 0;
+    editingExitIndex = isEdit ? index : -1;
+
+    const mapOptions = mapList.map(m => {
+      const val = m.fileId || m.fileName.replace('.json', '');
+      const label = m.name || val;
+      return '<option value="' + val + '"' + (exitData && getMapNameFromTarget(exitData.target) === val ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+
+    const targetVal = exitData ? exitData.target : '';
+    const directionVal = exitData ? (exitData.direction || 'up') : 'up';
+    const labelVal = exitData ? (exitData.label || '') : '';
+    const lockedVal = exitData ? (exitData.locked || false) : false;
+    const keyIdVal = exitData ? (exitData.keyId || '') : '';
+    const spawnXVal = exitData ? exitData.spawnX : '2.5';
+    const spawnYVal = exitData ? exitData.spawnY : '2.5';
+    const tileXVal = exitData ? exitData.tileX : 0;
+    const tileYVal = exitData ? exitData.tileY : 0;
+    const connIdVal = exitData ? (exitData.connectionId || '') : '';
+
+    const connIds = collectConnectionIds();
+    const datalistOpts = connIds.map(id => '<option value="' + id + '">').join('');
+
+    showModal(isEdit ? 'Editar Exit' : 'A\u00F1adir Exit',
+      '<div class="modal-field"><label>Tile X</label><input type="number" id="fExitX" value="' + tileXVal + '" min="0" max="' + (mapData ? mapData.width - 1 : 99) + '"></div>' +
+      '<div class="modal-field"><label>Tile Y</label><input type="number" id="fExitY" value="' + tileYVal + '" min="0" max="' + (mapData ? mapData.height - 1 : 99) + '"></div>' +
+      '<div class="modal-field"><label>ID de conexi\u00F3n</label>' +
+        '<input type="text" id="fExitConnId" value="' + connIdVal + '" list="connIdList" placeholder="ej: cueva_entrada" style="width:100%">' +
+        '<datalist id="connIdList">' + datalistOpts + '</datalist>' +
+        '<div style="display:flex;gap:0.3rem;margin-top:0.3rem">' +
+          '<span id="connStatus" style="font-size:0.75rem;color:#8b949e"></span>' +
+          '<button id="btnResolveConn" class="tool-btn-sm" type="button" style="font-size:0.7rem">Buscar conexi\u00F3n</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-field"><label>Mapa destino</label><select id="fExitTarget">' + mapOptions + '</select></div>' +
+      (mapList.length === 0 ? '<p class="muted" style="font-size:0.75rem;margin-top:-0.5rem;margin-bottom:0.5rem">No se pudieron cargar los mapas</p>' : '') +
+      '<div class="modal-field"><label>Etiqueta</label><input type="text" id="fExitLabel" value="' + labelVal + '" placeholder="ej: Entrada a la Cueva"></div>' +
+      '<div class="modal-field"><label>Direcci\u00F3n</label><select id="fExitDirection">' +
+        '<option value="up"' + (directionVal === 'up' ? ' selected' : '') + '>\u25B2 Arriba</option>' +
+        '<option value="down"' + (directionVal === 'down' ? ' selected' : '') + '>\u25BC Abajo</option>' +
+        '<option value="left"' + (directionVal === 'left' ? ' selected' : '') + '>\u25C0 Izquierda</option>' +
+        '<option value="right"' + (directionVal === 'right' ? ' selected' : '') + '>\u25B6 Derecha</option>' +
+      '</select></div>' +
+      '<div class="modal-field"><label>Spawn X</label><input type="number" id="fExitSpawnX" value="' + spawnXVal + '" step="0.1"></div>' +
+      '<div class="modal-field"><label>Spawn Y</label><input type="number" id="fExitSpawnY" value="' + spawnYVal + '" step="0.1"></div>' +
+      '<div class="modal-field"><label><input type="checkbox" id="fExitLocked"' + (lockedVal ? ' checked' : '') + '> Bloqueado (require llave)</label></div>' +
+      '<div class="modal-field" id="fKeyField"' + (lockedVal ? '' : ' style="display:none"') + '><label>ID de llave</label><input type="text" id="fExitKeyId" value="' + keyIdVal + '" placeholder="ej: llave_cueva"></div>',
       () => {
+        const tileX = parseInt(document.getElementById('fExitX').value);
+        const tileY = parseInt(document.getElementById('fExitY').value);
+        const target = document.getElementById('fExitTarget').value;
+        const direction = document.getElementById('fExitDirection').value;
+        const label = document.getElementById('fExitLabel').value.trim();
+        const locked = document.getElementById('fExitLocked').checked;
+        const keyId = document.getElementById('fExitKeyId') ? document.getElementById('fExitKeyId').value.trim() : '';
+        const spawnX = parseFloat(document.getElementById('fExitSpawnX').value);
+        const spawnY = parseFloat(document.getElementById('fExitSpawnY').value);
+        const connectionId = document.getElementById('fExitConnId').value.trim() || null;
+
+        const exitObj = {
+          tileX, tileY,
+          target: target ? (target.startsWith('/maps/') ? target : '/maps/' + target + '.json') : null,
+          spawnX, spawnY,
+          label: label || null,
+          connectionId: connectionId,
+          direction: direction || 'up',
+          locked: locked || false,
+          keyId: keyId || null,
+        };
+
         if (!mapData.exits) mapData.exits = [];
-        mapData.exits.push({
-          tileX: parseInt(document.getElementById('fExitX').value),
-          tileY: parseInt(document.getElementById('fExitY').value),
-          target: document.getElementById('fExitTarget').value,
-          spawnX: parseFloat(document.getElementById('fExitSpawnX').value),
-          spawnY: parseFloat(document.getElementById('fExitSpawnY').value),
-        });
+        if (isEdit && editingExitIndex >= 0) {
+          mapData.exits[editingExitIndex] = exitObj;
+        } else {
+          mapData.exits.push(exitObj);
+        }
+        editingExitIndex = -1;
         showExits();
         render();
       }
     );
-  });
+
+    const lockedChk = document.getElementById('fExitLocked');
+    if (lockedChk) {
+      lockedChk.addEventListener('change', () => {
+        const kf = document.getElementById('fKeyField');
+        if (kf) kf.style.display = lockedChk.checked ? '' : 'none';
+      });
+    }
+
+    const connInput = document.getElementById('fExitConnId');
+    const connStatus = document.getElementById('connStatus');
+    if (connInput && connStatus) {
+      if (connInput.value) {
+        connStatus.textContent = connInput.value + ' \u2014 Conectando...';
+        resolveConnection(connInput.value).then(data => {
+          if (data.found) {
+            connStatus.textContent = '\uD83D\uDD17 Conectado a ' + data.fileId + ' (' + data.tileX + ', ' + data.tileY + ')';
+            connStatus.style.color = '#3fb950';
+          } else {
+            connStatus.textContent = '\u26A0\uFE0F Sin conectar';
+            connStatus.style.color = '#f85149';
+          }
+        });
+      }
+      const resolveBtn = document.getElementById('btnResolveConn');
+      if (resolveBtn) {
+        resolveBtn.addEventListener('click', async () => {
+          const label = connInput.value.trim();
+          if (!label) { connStatus.textContent = 'Ingres\u00E1 un ID de conexi\u00F3n'; return; }
+          connStatus.textContent = 'Buscando...';
+          connStatus.style.color = '#8b949e';
+          const data = await resolveConnection(label);
+          if (data.found) {
+            connStatus.textContent = '\uD83D\uDD17 Conectado a ' + data.fileId + ' (' + data.tileX + ', ' + data.tileY + ')';
+            connStatus.style.color = '#3fb950';
+            const targetSel = document.getElementById('fExitTarget');
+            if (targetSel) targetSel.value = data.fileId;
+            const sx = document.getElementById('fExitSpawnX');
+            const sy = document.getElementById('fExitSpawnY');
+            if (sx) sx.value = (data.tileX + 0.5).toFixed(1);
+            if (sy) sy.value = (data.tileY + 0.5).toFixed(1);
+          } else {
+            connStatus.textContent = '\u26A0\uFE0F Sin conectar \u2014 no hay otra puerta con esta etiqueta';
+            connStatus.style.color = '#f85149';
+          }
+        });
+      }
+    }
+  }
 
   async function init() {
-    await loadExternalPalette();
+    await Promise.all([
+      loadExternalPalette(),
+      loadDefaultMap(),
+      loadMapList(),
+    ]);
     renderPalette();
     selectTile(tilePalette[0] || { id: 0, name: 'Vac\u00EDo', color: '#000000' });
     newMap(25, 20, '2d');

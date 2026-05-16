@@ -128,10 +128,11 @@ function deleteEntity(entityId) {
 }
 
 const MAPS_DIR = path.join(PUBLIC_DIR, 'maps');
+const MAPS_CONFIG = path.join(MAPS_DIR, 'config.json');
 
 function listMaps() {
   if (!fs.existsSync(MAPS_DIR)) return [];
-  const files = fs.readdirSync(MAPS_DIR).filter(f => f.endsWith('.json') && f !== 'COLORES.md');
+  const files = fs.readdirSync(MAPS_DIR).filter(f => f.endsWith('.json') && f !== 'COLORES.md' && f !== 'config.json');
   const result = [];
   for (const file of files) {
     try {
@@ -225,6 +226,29 @@ const server = http.createServer((req, res) => {
     });
   }
 
+  if (method === 'GET' && url === '/api/mapas/default') {
+    try {
+      if (fs.existsSync(MAPS_CONFIG)) {
+        const config = JSON.parse(fs.readFileSync(MAPS_CONFIG, 'utf8'));
+        return sendJson(res, 200, config);
+      }
+      return sendJson(res, 200, { defaultMap: 'inicio' });
+    } catch {
+      return sendJson(res, 200, { defaultMap: 'inicio' });
+    }
+  }
+
+  if (method === 'POST' && url === '/api/mapas/default') {
+    return parseJsonBody(req).then(body => {
+      if (!body.defaultMap) return sendJson(res, 400, { error: 'defaultMap requerido' });
+      fs.writeFileSync(MAPS_CONFIG, JSON.stringify({ defaultMap: body.defaultMap }, null, 2));
+      sendJson(res, 200, { ok: true, defaultMap: body.defaultMap });
+    }).catch(err => {
+      sendJson(res, 400, { error: err.message });
+    });
+    return;
+  }
+
   if (method === 'DELETE' && url.startsWith('/api/mapas/')) {
     const mapName = url.replace('/api/mapas/', '');
     if (!mapName) return sendJson(res, 400, { error: 'name requerido' });
@@ -239,6 +263,28 @@ const server = http.createServer((req, res) => {
       sendJson(res, 500, { error: err.message });
     }
     return;
+  }
+
+  if (method === 'GET' && req.url.startsWith('/api/mapas/resolve-label')) {
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const label = parsedUrl.searchParams.get('label');
+    if (!label) return sendJson(res, 400, { error: 'label requerido' });
+    const maps = listMaps();
+    for (const map of maps) {
+      if (!map.exits) continue;
+      for (const exit of map.exits) {
+        if (exit.connectionId === label) {
+          return sendJson(res, 200, {
+            found: true,
+            fileId: map.fileId,
+            tileX: exit.tileX,
+            tileY: exit.tileY,
+            direction: exit.direction || 'up'
+          });
+        }
+      }
+    }
+    return sendJson(res, 200, { found: false });
   }
 
   if (ROUTES[url]) {

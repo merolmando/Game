@@ -109,6 +109,6 @@
     "4": "agua"
   },
   "exits": [
-    { "tileX": 23, "tileY": 1, "target": "/maps/cueva.json", "spawnX": 1.5, "spawnY": 1.5 }
+    { "tileX": 23, "tileY": 1, "target": "/maps/cueva.json", "spawnX": 1.5, "spawnY": 1.5, "label": "Entrada a la Cueva", "direction": "right", "locked": false, "keyId": null }
   ]
 }

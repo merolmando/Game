@@ -27,6 +27,7 @@ const Renderer = {
     }
 
     this.drawTransition(ctx);
+    this.drawMessage(ctx);
   },
 
   drawCeiling(ctx) {
@@ -78,7 +79,7 @@ const Renderer = {
     const offsetX = 10;
     const offsetY = SCREEN_H - Map.getHeight() * scale - 10;
 
-    const grid = Map.getGrid('mundo');
+    const grid = Map.getGrid('estructura') || Map.getGrid('terreno');
     if (!grid) return;
 
     for (let y = 0; y < Map.getHeight(); y++) {
@@ -165,14 +166,16 @@ const Renderer = {
 
     this.drawSky(ctx);
     this.drawLayer(ctx, 'terreno');
-    this.drawLayer(ctx, 'mundo');
+    this.drawLayer(ctx, 'estructura');
+    this.drawLayer(ctx, 'objetos');
 
     const pulse = Math.sin(Date.now() / 400) * 0.15 + 0.35;
+    const dirArrow = { up: '\u25B2', down: '\u25BC', left: '\u25C0', right: '\u25B6' };
     for (const exit of map.exits || []) {
       const ex = Math.round(exit.tileX * ts - Camera.x);
       const ey = Math.round(exit.tileY * ts - Camera.y);
 
-      const exitTileId = Map.getTile(exit.tileX, exit.tileY, 'mundo');
+      const exitTileId = Map.getTile(exit.tileX, exit.tileY, 'estructura');
       let entityId = null;
       if (map.tileSprites) entityId = map.tileSprites[exitTileId];
 
@@ -185,8 +188,35 @@ const Renderer = {
         ctx.fillRect(ex, ey, ts, ts);
       }
 
-      ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
-      ctx.fillRect(ex - 2, ey - 2, ts + 4, ts + 4);
+      const borderColor = exit.locked ? 'rgba(248,81,73, 0.7)' : `rgba(255, 215, 0, ${pulse})`;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = exit.locked ? 2 : 1;
+      ctx.strokeRect(ex - 2, ey - 2, ts + 4, ts + 4);
+
+      if (ts >= 24) {
+        ctx.fillStyle = exit.locked ? '#f85149' : '#ffd700';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const arrow = dirArrow[exit.direction || 'up'] || '\u25B2';
+        ctx.fillText(arrow, ex + ts / 2, ey + 2);
+
+        if (exit.label && ts >= 32) {
+          ctx.font = '10px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.shadowColor = '#000';
+          ctx.shadowBlur = 3;
+          ctx.fillText(exit.label, ex + ts / 2, ey + ts / 2 + 4);
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      if (exit.locked) {
+        ctx.font = '16px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f85149';
+        ctx.fillText('\uD83D\uDD12', ex + ts / 2, ey + ts / 2);
+      }
     }
 
     const px = Math.round(player.x * ts - Camera.x);
@@ -215,6 +245,36 @@ const Renderer = {
       ctx.lineTo(px + player.facingX * 16, py + player.facingY * 16);
       ctx.stroke();
       ctx.lineWidth = 1;
+    }
+  },
+
+  drawMessage(ctx) {
+    if (Map.message && Map.messageTimer > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.font = '14px sans-serif';
+      const mw = ctx.measureText(Map.message).width + 40;
+      const mh = 36;
+      const mx = (SCREEN_W - mw) / 2;
+      const my = SCREEN_H - 60;
+      const r = 8;
+      ctx.beginPath();
+      ctx.moveTo(mx + r, my);
+      ctx.lineTo(mx + mw - r, my);
+      ctx.quadraticCurveTo(mx + mw, my, mx + mw, my + r);
+      ctx.lineTo(mx + mw, my + mh - r);
+      ctx.quadraticCurveTo(mx + mw, my + mh, mx + mw - r, my + mh);
+      ctx.lineTo(mx + r, my + mh);
+      ctx.quadraticCurveTo(mx, my + mh, mx, my + mh - r);
+      ctx.lineTo(mx, my + r);
+      ctx.quadraticCurveTo(mx, my, mx + r, my);
+      ctx.fill();
+      ctx.fillStyle = '#f0e6d0';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Map.message, SCREEN_W / 2, my + mh / 2);
+      ctx.restore();
     }
   },
 

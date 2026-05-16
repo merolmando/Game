@@ -111,15 +111,44 @@
   padding: 0.4rem;
   margin-bottom: 0.4rem;
   font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
+.exit-card:hover { border-color: #58a6ff; }
 .exit-card .exit-row { display: flex; justify-content: space-between; padding: 0.1rem 0; }
 .exit-card .exit-label { color: #8b949e; }
 .exit-card .exit-value { color: #c9d1d9; }
-.exit-card .exit-del {
+
+.exit-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #21262d;
+}
+.exit-arrow { font-size: 1rem; }
+.exit-label-text { flex: 1; color: #f0e6d0; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exit-locked { font-size: 0.8rem; }
+
+.exit-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid #21262d;
+}
+.exit-edit {
+  color: #58a6ff;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.exit-edit:hover { text-decoration: underline; }
+.exit-del {
   color: #f85149;
   cursor: pointer;
   font-size: 0.75rem;
 }
-.exit-card .exit-del:hover { text-decoration: underline; }
+.exit-del:hover { text-decoration: underline; }
 
 select.tool-btn-sm { padding: 0.2rem 0.4rem; font-size: 0.8rem; }

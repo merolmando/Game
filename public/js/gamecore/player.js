@@ -23,6 +23,9 @@ const Player = {
   level: 1,
   // Protección al spawn: no se checkean exits durante este tiempo.
   spawnTimer: 0,
+  // Keys que el jugador ha recolectado (para puertas bloqueadas).
+  keys: [],
+  hasKey(keyId) { return this.keys.includes(keyId); },
   // Animación de bob (oscilación al caminar).
   bobPhase: 0,
   bobOffset: 0,

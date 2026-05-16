@@ -1,10 +1,13 @@
 const Map = {
   current: null,
+  message: '',
+  messageTimer: 0,
 
   async load(path) {
     const res = await fetch(path);
     if (!res.ok) throw new Error(`Error al cargar mapa (${res.status}): ${path}`);
     const data = await res.json();
+    migrateMapData(data);
     this.current = data;
     return data;
   },
@@ -16,12 +19,12 @@ const Map = {
       if (layer === 'cielo') return l;
       return Array.isArray(l) ? l : null;
     }
-    if (layer === 'mundo') return this.current.tiles;
+    if (layer === 'estructura' && this.current.tiles) return this.current.tiles;
     return null;
   },
 
   getTile(x, y, layer) {
-    layer = layer || 'mundo';
+    layer = layer || 'estructura';
     if (!this.current) return 1;
     const ix = Math.floor(x);
     const iy = Math.floor(y);
@@ -33,13 +36,13 @@ const Map = {
       return 0;
     }
 
-    if (layer === 'mundo') return this.current.tiles[iy][ix];
+    if (layer === 'estructura' && this.current.tiles) return this.current.tiles[iy][ix];
     return 0;
   },
 
   isSolid(x, y) {
     if (!this.current) return true;
-    const id = this.getTile(x, y, 'mundo');
+    const id = this.getTile(x, y, 'estructura');
 
     if (id === 0) return false;
 
@@ -71,3 +74,25 @@ const Map = {
     return this.current ? this.current.height : 0;
   },
 };
+
+function migrateMapData(data) {
+  if (!data.layers) {
+    const h = data.height;
+    const w = data.width;
+    data.layers = {
+      cielo: { type: 'solid', color: '#1a1a2e' },
+      terreno: Array.from({ length: h }, () => Array(w).fill(0)),
+      estructura: data.tiles || Array.from({ length: h }, () => Array(w).fill(0)),
+      objetos: Array.from({ length: h }, () => Array(w).fill(0)),
+    };
+    delete data.tiles;
+  } else {
+    if (data.layers.mundo && !data.layers.estructura) {
+      data.layers.estructura = data.layers.mundo;
+      delete data.layers.mundo;
+    }
+    if (!data.layers.objetos) {
+      data.layers.objetos = Array.from({ length: data.height }, () => Array(data.width).fill(0));
+    }
+  }
+}

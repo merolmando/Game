@@ -47,10 +47,36 @@ let fps = 0;
 let frameCount = 0;
 let fpsTimer = 0;
 
-async function loadMap(path) {
+async function resolveExitTarget(exit) {
+  if (exit.target) return { target: exit.target, spawnData: exit };
+  if (exit.connectionId) {
+    try {
+      const res = await fetch('/api/mapas/resolve-label?label=' + encodeURIComponent(exit.connectionId));
+      const data = await res.json();
+      if (data.found) {
+        const target = '/maps/' + data.fileId + '.json';
+        const spawnData = { spawnX: data.tileX + 0.5, spawnY: data.tileY + 0.5 };
+        return { target, spawnData };
+      }
+    } catch (err) {
+      console.error('Error resolviendo conexi\u00F3n:', err.message);
+    }
+  }
+  return { target: null, spawnData: null };
+}
+
+async function loadMap(path, spawnData) {
+  Map.message = '';
+  Map.messageTimer = 0;
+  if (!path.startsWith('/')) path = '/maps/' + path + '.json';
   const data = await Map.load(path);
-  Player.x = data.playerStart.x;
-  Player.y = data.playerStart.y;
+  if (spawnData) {
+    Player.x = spawnData.spawnX;
+    Player.y = spawnData.spawnY;
+  } else {
+    Player.x = data.playerStart.x;
+    Player.y = data.playerStart.y;
+  }
   if (data.mode === '2d') {
     Player.facingX = data.playerStart.dirX || 0;
     Player.facingY = data.playerStart.dirY || -1;
@@ -85,27 +111,50 @@ async function gameLoop(timestamp) {
       Player.spawnTimer -= dt;
     } else if (Player.spawnTimer <= 0) {
       const exit = Map.checkExits(Player.x, Player.y);
-  if (exit) {
-        Transition.start(1.0);
-        loadMap(exit.target).then(() => {
-          Transition.loaded = true;
-        }).catch(err => {
-          console.error(err.message);
-          Transition.loaded = true;
-          Map.current = null;
-        });
+      if (exit) {
+        if (exit.locked && !Player.hasKey(exit.keyId)) {
+          Map.message = exit.label ? 'Necesitas una llave para abrir ' + exit.label : 'Puerta bloqueada';
+          Map.messageTimer = 2;
+        } else {
+          Transition.start(1.0);
+          resolveExitTarget(exit).then(({ target, spawnData }) => {
+            if (target) {
+              loadMap(target, spawnData).then(() => {
+                Transition.loaded = true;
+              }).catch(err => {
+                console.error(err.message);
+                Transition.loaded = true;
+                Map.current = null;
+              });
+            } else {
+              Transition.loaded = true;
+            }
+          });
+        }
       }
     }
   }
 
   Transition.update(dt);
+  if (Map.messageTimer > 0) {
+    Map.messageTimer -= dt;
+    if (Map.messageTimer <= 0) { Map.message = ''; Map.messageTimer = 0; }
+  }
   Renderer.dt = dt;
   Renderer.render(Player);
   requestAnimationFrame(gameLoop);
 }
 
 async function init() {
-  await loadMap('/maps/inicio.json');
+  let startMap = '/maps/inicio.json';
+  try {
+    const res = await fetch('/api/mapas/default');
+    if (res.ok) {
+      const config = await res.json();
+      if (config.defaultMap) startMap = config.defaultMap;
+    }
+  } catch {}
+  await loadMap(startMap);
   await Sprite.load();
   requestAnimationFrame(gameLoop);
 }
