@@ -247,6 +247,22 @@
         <li><strong>Fix null guard en <code>_circleBlocked</code> (<code>player.js</code>):</strong> Si <code>_circleBlocked()</code> se llamaba sin mapa cargado, acceder a <code>Map.current.characters</code> lanzaba TypeError. Agregado <code>if (!Map.current) return true</code> al inicio.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-17 — Multi-atlas, sistema de direcciones y Fase 2 de herramientas</h2>
+      <p><strong>Multi-atlas:</strong> Migración de un único <code>atlas.png</code> a múltiples atlas por categoría (<code>atlas_mundo.png</code>, <code>atlas_entidades.png</code>, <code>atlas_ui.png</code>). <code>build-atlas.js</code> agrupa entidades por campo <code>atlas</code> y genera un PNG+JSON por grupo. <code>sprite.js</code> implementa búsqueda cross-atlas y getters backward-compatibles (<code>Sprite.atlas</code> retorna el atlas <code>mundo</code>).</p>
+      <p><strong>Direcciones en sprites:</strong> Soporte para <code>directions: "4dir" | "8dir"</code> con layout en el spritesheet (3 o 5 bloques de frames). Mirror automático para left (flip horizontal del bloque right). <code>getFrame(entityId, frameIndex, direction)</code> y <code>dirFrames</code> en atlas JSON.</p>
+      <p><strong>TileW/TileH y halfBlock:</strong> Entidades ahora declaran <code>tileW</code> y <code>tileH</code> (tamaño en tiles). <code>build-atlas.js</code> genera <code>frameW = tileW * tileSize</code>, <code>frameH = tileH * tileSize</code>. <code>halfBlock</code> renderiza a mitad de altura visual (shift down en raycaster, medio frame en 2D). <code>raycaster.js</code> <code>_addBillboard</code> usa tileW/tileH para dimensiones de billboard. <code>renderer.js</code> usa frameW/frameH en draw2D y drawLayer.</p>
+      <p><strong>Adaptación de las 5 DevTools a multi-atlas:</strong></p>
+      <ul>
+        <li><strong>visor-atlas</strong> — Carga todos los grupos en canvas apilados con encabezados, selector de atlas, etiquetas atlas por entidad. Detail panel muestra dirFrames, tileW/tileH, halfBlock. Preview con selector de dirección y mirror.</li>
+        <li><strong>inspector-mapa</strong> — <code>loadAtlases()</code> reemplaza <code>loadExternalPalette()</code>. Imágenes por grupo para tiles/exits/paleta. Etiquetas atlas en dropdown de entidad. Selector de dirección en modal de personajes/enemigos con flecha direccional en canvas.</li>
+        <li><strong>creador-tiles</strong> — Selector de atlas en propiedades. Campos tileW/tileH/directions/mirror/halfBlock/blockVision/halfSolid guardados en entity.js. <code>spriteToBase64()</code> genera el canvas con el tamaño correcto según direcciones. Restaura todos los campos al editar.</li>
+        <li><strong>cortador-texturas</strong> — Campos tileW/tileH/directions/mirror/halfBlock en el formulario de selección. Guardados en entityData al persistir. Restaurados al seleccionar.</li>
+        <li><strong>editor-hud</strong> — <code>loadAtlasInfo()</code> carga todos los grupos. <code>drawImage()</code> usa <code>atlasImages[s.atlasName]</code>. Etiquetas atlas en dropdown de sprite.</li>
+      </ul>
+      <p><strong>Renderización halfBlock en 2D:</strong> <code>drawLayer</code> y <code>draw2D</code> (player, characters, enemies) ahora reducen la altura dibujada a la mitad cuando <code>info.halfBlock</code> es true, posicionando la parte visible sobre el tile.</p>
+      <p><strong>Entidades actualizadas:</strong> <code>player</code> configurado con <code>tileH:2</code>, <code>directions:"4dir"</code>, <code>mirror:true</code>. Todas las entidades existentes tienen campo <code>atlas</code> asignado (<code>mundo</code> o <code>entidades</code>).</p>
+    </article>
   </main>
 
   <footer>

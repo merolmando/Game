@@ -103,6 +103,34 @@
 }
 .prop-actions .tool-btn { flex: 1; font-size: 0.8rem; }
 
+.entity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  margin-bottom: 0.2rem;
+  font-size: 0.8rem;
+}
+.entity-item .entity-name { flex: 1; color: #c9d1d9; }
+.entity-item .entity-atlas {
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  background: #1f6feb22;
+  color: #58a6ff;
+  font-family: monospace;
+  white-space: nowrap;
+}
+.prop-field-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.prop-field-row .prop-field {
+  margin-bottom: 0;
+}
 .frames-auto {
   color: #484f58;
   font-size: 0.7rem;

@@ -41,9 +41,9 @@
       "title": "Sistema de sprites animados",
       "description": "Cargar y renderizar sprites con animaciones desde el atlas.",
       "priority": "media",
-      "status": "pending",
+      "status": "done",
       "effort": "4h",
-      "notes": "El atlas de tiles ya está definido en sprite.js"
+      "notes": "Multi-atlas (mundo/entidades/ui), direcciones 4dir/8dir, mirror, tileW/tileH, halfBlock. sprite.js con búsqueda cross-atlas."
     },
     {
       "id": 6,
@@ -56,6 +56,15 @@
     },
     {
       "id": 7,
+      "title": "Multi-atlas: build y devtools",
+      "description": "build-atlas.js multi-grupo, adaptar 5 devtools a multi-atlas + direcciones + tileW/tileH.",
+      "priority": "alta",
+      "status": "done",
+      "effort": "12h",
+      "notes": "visor-atlas, inspector-mapa, creador-tiles, cortador-texturas, editor-hud adaptados. halfBlock en renderer 2D."
+    },
+    {
+      "id": 8,
       "title": "Diseñar mapa de cueva",
       "description": "Completar el diseño del mapa cueva.json con zonas y transiciones.",
       "priority": "baja",
@@ -64,7 +73,7 @@
       "notes": "Usar el formato de tiles definido en COLORES.md"
     },
     {
-      "id": 8,
+      "id": 9,
       "title": "Escribir pruebas de movimiento",
       "description": "Probar que el jugador se mueve correctamente en los 4 mapas cardinales.",
       "priority": "baja",
@@ -73,7 +82,7 @@
       "notes": "Probar colisiones, bordes de mapa y transiciones"
     },
     {
-      "id": 9,
+      "id": 10,
       "title": "Documentar el sistema de mapas",
       "description": "Escribir documentación técnica del formato de mapas JSON.",
       "priority": "baja",
@@ -82,13 +91,22 @@
       "notes": "Incluir ejemplos de tiles, capas y objetos"
     },
     {
-      "id": 10,
+      "id": 11,
       "title": "Optimizar renderizado 2D",
       "description": "Solo renderizar tiles visibles en la ventana (frustum culling).",
       "priority": "baja",
       "status": "pending",
       "effort": "4h",
       "notes": "Usar la cámara para determinar qué tiles están en pantalla"
+    },
+    {
+      "id": 12,
+      "title": "Sprite font y HUD engine",
+      "description": "Crear entidad de fuente sprite en atlas ui, motor HUD renderizado desde config JSON.",
+      "priority": "media",
+      "status": "pending",
+      "effort": "6h",
+      "notes": "Caracteres como frames del atlas, HUD configurable con HP/MP bars, minimapa."
     }
   ]
 }

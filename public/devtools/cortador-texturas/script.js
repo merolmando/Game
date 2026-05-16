@@ -169,7 +169,15 @@
       name: 'seleccion_' + selIdCounter,
       type: 'tile',
       solid: false,
+      atlas: 'mundo',
       tileSize: ts,
+      tileW: 1,
+      tileH: 1,
+      directions: 'none',
+      mirror: true,
+      halfBlock: false,
+      blockVision: false,
+      halfSolid: false,
       frames: Math.max(1, Math.round(w / ts)),
       animSpeed: 0,
       rect: { x: rect.x, y: rect.y, w, h },
@@ -285,11 +293,20 @@
     document.getElementById('propPos').textContent = '(' + sel.rect.x + ', ' + sel.rect.y + ')';
     document.getElementById('propSize').textContent = sel.rect.w + ' × ' + sel.rect.h + ' px';
     document.getElementById('propType').value = sel.type;
+    document.getElementById('propAtlas').value = sel.atlas || 'mundo';
     document.getElementById('propSolid').checked = sel.solid;
     document.getElementById('propTileSize').value = sel.tileSize;
+    document.getElementById('propTileW').value = sel.tileW || 1;
+    document.getElementById('propTileH').value = sel.tileH || 1;
+    document.getElementById('propDirections').value = sel.directions || 'none';
+    document.getElementById('propMirror').checked = sel.mirror !== false;
+    document.getElementById('propHalfBlock').checked = sel.halfBlock || false;
+    document.getElementById('propBlockVision').checked = sel.blockVision || false;
+    document.getElementById('propHalfSolid').checked = sel.halfSolid || false;
     document.getElementById('propFrames').value = sel.frames;
     document.getElementById('propAnimSpeed').value = sel.animSpeed;
     document.getElementById('framesAuto').textContent = '(auto: ' + Math.max(1, Math.round(sel.rect.w / sel.tileSize)) + ')';
+    document.getElementById('propMirror').disabled = sel.directions === 'none';
   }
 
   function renderPreview() {
@@ -369,6 +386,14 @@
       frames: frames,
       animSpeed: sel.animSpeed,
       tileSize: ts,
+      tileW: sel.tileW || 1,
+      tileH: sel.tileH || 1,
+      directions: sel.directions || 'none',
+      mirror: sel.mirror !== false,
+      halfBlock: sel.halfBlock || false,
+      blockVision: sel.blockVision || false,
+      halfSolid: sel.halfSolid || false,
+      atlas: sel.atlas || 'mundo',
       defaultColor: '#888888',
     };
 
@@ -432,7 +457,7 @@
         const div = document.createElement('div');
         div.className = 'entity-item';
         const hasSprite = e.hasSprite ? ' \u2714' : ' \u2716';
-        div.innerHTML = '<span class="entity-name">' + e.id + '</span><span style="font-size:0.7rem;color:#484f58">' + hasSprite + '</span>';
+        div.innerHTML = '<span class="entity-name">' + e.id + '</span><span class="entity-atlas">' + (e.atlas || 'mundo') + '</span><span style="font-size:0.7rem;color:#484f58">' + hasSprite + '</span>';
         container.appendChild(div);
       });
     } catch (err) {
@@ -618,6 +643,9 @@
   document.getElementById('propType').addEventListener('change', e => {
     updateActiveSelection('type', e.target.value);
   });
+  document.getElementById('propAtlas').addEventListener('change', e => {
+    updateActiveSelection('atlas', e.target.value);
+  });
   document.getElementById('propSolid').addEventListener('change', e => {
     updateActiveSelection('solid', e.target.checked);
   });
@@ -649,6 +677,29 @@
   });
   document.getElementById('propAnimSpeed').addEventListener('change', e => {
     updateActiveSelection('animSpeed', parseFloat(e.target.value) || 0);
+  });
+
+  document.getElementById('propTileW').addEventListener('change', e => {
+    updateActiveSelection('tileW', Math.max(1, parseInt(e.target.value) || 1));
+  });
+  document.getElementById('propTileH').addEventListener('change', e => {
+    updateActiveSelection('tileH', Math.max(1, parseInt(e.target.value) || 1));
+  });
+  document.getElementById('propDirections').addEventListener('change', e => {
+    updateActiveSelection('directions', e.target.value);
+    document.getElementById('propMirror').disabled = e.target.value === 'none';
+  });
+  document.getElementById('propMirror').addEventListener('change', e => {
+    updateActiveSelection('mirror', e.target.checked);
+  });
+  document.getElementById('propHalfBlock').addEventListener('change', e => {
+    updateActiveSelection('halfBlock', e.target.checked);
+  });
+  document.getElementById('propBlockVision').addEventListener('change', e => {
+    updateActiveSelection('blockVision', e.target.checked);
+  });
+  document.getElementById('propHalfSolid').addEventListener('change', e => {
+    updateActiveSelection('halfSolid', e.target.checked);
   });
 
   document.getElementById('btnGuardarSel').addEventListener('click', () => {

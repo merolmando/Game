@@ -129,9 +129,22 @@ const Raycaster = {
 
     if (transformY <= 0) return;
 
+    let tileW = 1, tileH = 1, halfBlock = false;
+    if (entityId) {
+      const info = Sprite.getEntity(entityId);
+      if (info) {
+        tileW = info.tileW || 1;
+        tileH = info.tileH || 1;
+        halfBlock = info.halfBlock || false;
+      }
+    }
+
+    const baseHeight = Math.abs(Math.floor(SCREEN_H / transformY));
+    const height = baseHeight * tileH;
+    const width = baseHeight * tileW;
+    const yOffset = halfBlock ? height / 2 : 0;
+
     const screenX = Math.floor(SCREEN_W / 2 * (1 + transformX / transformY));
-    const height = Math.abs(Math.floor(SCREEN_H / transformY));
-    const width = height;
 
     list.push({
       bx, by,
@@ -141,8 +154,11 @@ const Raycaster = {
       screenX,
       width,
       height,
-      drawStartY: Math.max(0, -height / 2 + SCREEN_H / 2),
-      drawEndY: Math.min(SCREEN_H - 1, height / 2 + SCREEN_H / 2),
+      tileW,
+      tileH,
+      halfBlock,
+      drawStartY: Math.max(0, -height / 2 + SCREEN_H / 2 + yOffset),
+      drawEndY: Math.min(SCREEN_H - 1, height / 2 + SCREEN_H / 2 + yOffset),
       drawStartX: Math.max(0, -width / 2 + screenX),
       drawEndX: Math.min(SCREEN_W - 1, width / 2 + screenX),
     });

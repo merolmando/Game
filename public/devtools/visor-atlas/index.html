@@ -68,6 +68,11 @@
               <div class="preview-container">
                 <canvas id="animCanvas"></canvas>
               </div>
+              <div id="directionSelector" style="display:none;margin-bottom:6px;text-align:center">
+                <label style="font-size:0.75rem;color:#8b949e;margin-right:4px">Dir:</label>
+                <select id="dirSelect" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:2px 6px;font-size:0.75rem">
+                </select>
+              </div>
               <div class="frame-strip" id="frameStrip"></div>
             </section>
 
@@ -79,6 +84,12 @@
               <div class="prop-row"><span class="prop-label">AnimSpeed</span><span id="dAnimSpeed" class="prop-value">—</span></div>
               <div class="prop-row"><span class="prop-label">Posición</span><span id="dPos" class="prop-value">—</span></div>
               <div class="prop-row"><span class="prop-label">Tamaño frame</span><span id="dFrameSize" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">TileW × TileH</span><span id="dTileSize" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Direcciones</span><span id="dDirections" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">Mirror</span><span id="dMirror" class="prop-value">—</span></div>
+              <div class="prop-row"><span class="prop-label">HalfBlock</span><span id="dHalfBlock" class="prop-value">—</span></div>
+              <div class="prop-row" id="dBlockVisionRow" style="display:none"><span class="prop-label">BlockVision</span><span id="dBlockVision" class="prop-value">—</span></div>
+              <div class="prop-row" id="dHalfSolidRow" style="display:none"><span class="prop-label">HalfSolid</span><span id="dHalfSolid" class="prop-value">—</span></div>
               <div class="prop-row"><span class="prop-label">Sprite real</span><span id="dHasSprite" class="prop-value">—</span></div>
               <div class="prop-row" id="dLayersRow" style="display:none"><span class="prop-label">Capas</span><span id="dLayers" class="prop-value">—</span></div>
             </section>

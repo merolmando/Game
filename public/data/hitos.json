@@ -3,71 +3,135 @@
     {
       "id": "fase-0",
       "title": "Fase 0 — Base del proyecto",
-      "description": "Estructura de carpetas, servidor, enrutamiento de páginas.",
+      "description": "Servidor, motor gráfico híbrido (2D + raycasting), sistema de mapas, atlas de sprites, colisión, transiciones, REST API y 4 herramientas de desarrollo.",
       "status": "done",
       "progress": 100,
       "tasks": [
-        { "title": "Configurar estructura del proyecto", "status": "done" },
-        { "title": "Implementar servidor HTTP", "status": "done" },
-        { "title": "Crear sistema de rutas", "status": "done" },
-        { "title": "Estilos globales y navegación", "status": "done" }
+        { "title": "Configurar estructura del proyecto y servidor HTTP", "status": "done" },
+        { "title": "Motor GameCore: game loop, input, cámara 2D", "status": "done" },
+        { "title": "Raycaster DDA y renderer dual-mode (2D + ray)", "status": "done" },
+        { "title": "Sistema de mapas JSON con capas (cielo/terreno/estructura/objetos)", "status": "done" },
+        { "title": "Atlas de sprites auto-generado desde entidades/", "status": "done" },
+        { "title": "Colisión circular con wall sliding", "status": "done" },
+        { "title": "Transiciones fade out/in entre mapas", "status": "done" },
+        { "title": "Piso texturizado con floor-casting", "status": "done" },
+        { "title": "API REST para CRUD de entidades y mapas", "status": "done" },
+        { "title": "4 DevTools: inspector-mapa, creador-tiles, cortador-texturas, visor-atlas", "status": "done" }
+      ]
+    },
+    {
+      "id": "fase-1",
+      "title": "Fase 1 — Multi-atlas y Direcciones",
+      "description": "Migración a múltiples atlas por categoría (mundo/entidades/ui/efectos), sistema de direcciones (4dir/8dir/mirror), tileW/tileH en entidades, halfBlock, y adaptación de todas las devtools.",
+      "status": "done",
+      "progress": 100,
+      "tasks": [
+        { "title": "Multi-atlas: build-atlas.js genera atlas_{grupo}.png/.json por categoría", "status": "done" },
+        { "title": "sprite.js: búsqueda cross-atlas, getFrame() con direcciones, mirror en draw/drawAnim", "status": "done" },
+        { "title": "core.js, renderer.js: integración multi-atlas en render 2D y ray", "status": "done" },
+        { "title": "visor-atlas: carga todos los grupos en canvas apilados, selector de atlas, detalle con dirFrames/tileH/halfBlock, selector de dirección", "status": "done" },
+        { "title": "inspector-mapa: loadAtlases(), atlas tags en dropdown de entidad, selector de dirección en personajes", "status": "done" },
+        { "title": "creador-tiles: atlas selector en propiedades, tileW/tileH/directions/mirror/halfBlock guardado y spriteToBase64 multi-dir", "status": "done" },
+        { "title": "cortador-texturas: campos tileW/tileH/directions/mirror/halfBlock en selecciones y guardado", "status": "done" },
+        { "title": "editor-hud: loadAtlasInfo() multi-atlas, atlasImages[nombre] para drawImage, atlas tags en dropdown", "status": "done" },
+        { "title": "halfBlock en renderer 2D: drawLayer y draw2D para player/characters/enemies", "status": "done" },
+        { "title": "Sistema de sprite font (caracteres como frames del atlas)", "status": "pending" }
       ]
     },
     {
       "id": "hito-1",
-      "title": "Hito 1 — El Núcleo",
-      "description": "Plantilla de personaje, movimiento básico, atlas de tiles y sprites.",
+      "title": "Hito 1 — HUD y UI",
+      "description": "Editor visual de HUD, sprite font, barras de estado, minimapa, sistema de mensajes y notificaciones.",
       "status": "in-progress",
-      "progress": 70,
+      "progress": 20,
       "tasks": [
-        { "title": "Diseñar plantilla de personaje", "status": "done" },
-        { "title": "Crear atlas de tiles", "status": "done" },
-        { "title": "Implementar movimiento básico", "status": "done" },
-        { "title": "Sistema de sprites del jugador", "status": "done" },
-        { "title": "Cargar mapas desde JSON", "status": "done" },
-        { "title": "Cámara y viewport", "status": "done" },
-        { "title": "Detección de colisiones (circular)", "status": "done" },
-        { "title": "Transiciones entre mapas", "status": "done" },
-        { "title": "Piso texturizado con floor-casting", "status": "done" },
-        { "title": "Sistema de capas estructura/terreno", "status": "done" }
+        { "title": "Herramienta visual para crear y editar el HUD", "status": "done" },
+        { "title": "Sistema de sprite font (caracteres como frames del atlas)", "status": "pending" },
+        { "title": "Motor HUD renderizado desde config JSON", "status": "done" },
+        { "title": "Barra de HP y MP con bindings dinámicos", "status": "pending" },
+        { "title": "Minimapa integrado en el HUD", "status": "pending" },
+        { "title": "Slots de inventario en pantalla", "status": "pending" },
+        { "title": "Área de mensajes y notificaciones", "status": "pending" }
       ]
     },
     {
       "id": "hito-2",
       "title": "Hito 2 — Interacción",
-      "description": "Objetos básicos y NPCs con IA simple.",
+      "description": "Tecla de acción, NPCs reactivos, objetos interactuables, puertas con llave y sistema de diálogo básico.",
       "status": "pending",
       "progress": 0,
       "tasks": [
-        { "title": "Sistema de objetos interactuables", "status": "pending" },
-        { "title": "IA simple para NPCs", "status": "pending" },
-        { "title": "Diálogos básicos", "status": "pending" },
-        { "title": "Objetos recolectables", "status": "pending" }
+        { "title": "Tecla de interacción (E/Espacio)", "status": "pending" },
+        { "title": "Objetos interactuables (cofres, palancas, etc.)", "status": "pending" },
+        { "title": "NPCs con respuesta básica al jugador", "status": "pending" },
+        { "title": "Sistema de diálogo simple", "status": "pending" },
+        { "title": "Puertas con llave funcionales", "status": "pending" }
       ]
     },
     {
       "id": "hito-3",
-      "title": "Hito 3 — Atributos",
-      "description": "Sistema de estadísticas (HP, MP, STR, INT) e inventario.",
+      "title": "Hito 3 — NPCs e IA",
+      "description": "Movimiento autónomo de NPCs, patrullaje, reagrupamiento y comportamientos básicos.",
       "status": "pending",
       "progress": 0,
       "tasks": [
-        { "title": "Sistema de estadísticas del jugador", "status": "pending" },
-        { "title": "Inventario y gestión de objetos", "status": "pending" },
-        { "title": "Sistema de combate básico", "status": "pending" },
-        { "title": "Experiencia y nivelación", "status": "pending" }
+        { "title": "Sistema de IA con estados (idle, patrullar, seguir)", "status": "pending" },
+        { "title": "Movimiento autónomo con colisión", "status": "pending" },
+        { "title": "Rutas de patrullaje configurables", "status": "pending" },
+        { "title": "NPCs comerciales (tienda/venta)", "status": "pending" }
       ]
     },
     {
       "id": "hito-4",
-      "title": "Hito 4 — Herramientas",
-      "description": "Editor de mapas y DevTools.",
+      "title": "Hito 4 — Combate",
+      "description": "Sistema de combate, daño, uso de stats (HP/MP/STR/INT), muerte y nivelación del jugador.",
       "status": "pending",
       "progress": 0,
       "tasks": [
-        { "title": "Editor de mapas visual", "status": "pending" },
-        { "title": "Panel de depuración", "status": "pending" },
-        { "title": "Consola de comandos de desarrollo", "status": "pending" }
+        { "title": "Sistema de ataque cuerpo a cuerpo y a distancia", "status": "pending" },
+        { "title": "Enemigos con IA de combate", "status": "pending" },
+        { "title": "Daño, muerte y respawn", "status": "pending" },
+        { "title": "Uso de estadísticas (STR, INT) en combate", "status": "pending" },
+        { "title": "Experiencia y subida de nivel", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-5",
+      "title": "Hito 5 — Inventario",
+      "description": "UI de inventario, recolección de items, equipamiento y gestión de objetos.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "UI completa de inventario", "status": "pending" },
+        { "title": "Items recolectables en el mundo", "status": "pending" },
+        { "title": "Sistema de equipamiento (armas, armadura)", "status": "pending" },
+        { "title": "Items de consumo (pociones, comida)", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-6",
+      "title": "Hito 6 — Sonido y Música",
+      "description": "Sistema de audio, efectos sonoros y música ambiental para el mundo.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "Sistema de audio con Web Audio API", "status": "pending" },
+        { "title": "Efectos de sonido para acciones del jugador", "status": "pending" },
+        { "title": "Música ambiental por mapa", "status": "pending" },
+        { "title": "Sonido 3D posicional", "status": "pending" }
+      ]
+    },
+    {
+      "id": "hito-7",
+      "title": "Hito 7 — Multiplayer",
+      "description": "Conexión WebSocket, sincronización de jugadores, mundo descentralizado por nodos.",
+      "status": "pending",
+      "progress": 0,
+      "tasks": [
+        { "title": "Servidor WebSocket", "status": "pending" },
+        { "title": "Sincronización de posición entre jugadores", "status": "pending" },
+        { "title": "Sistema de nodos (cada servidor = parte del mapa)", "status": "pending" },
+        { "title": "Chat y comunicación entre jugadores", "status": "pending" }
       ]
     }
   ]

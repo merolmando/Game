@@ -11,12 +11,14 @@ const Renderer = {
   },
 
   _buildAtlasData() {
-    if (!Sprite.loaded || !Sprite.atlas) return;
+    if (!Sprite.loaded) return;
+    const mundo = Sprite.getAtlas('mundo');
+    if (!mundo || !mundo.img) return;
     const c = document.createElement('canvas');
-    c.width = Sprite.atlas.width;
-    c.height = Sprite.atlas.height;
+    c.width = mundo.img.width;
+    c.height = mundo.img.height;
     const cx = c.getContext('2d');
-    cx.drawImage(Sprite.atlas, 0, 0);
+    cx.drawImage(mundo.img, 0, 0);
     this.atlasImageData = cx.getImageData(0, 0, c.width, c.height);
   },
 
@@ -66,7 +68,7 @@ const Renderer = {
   },
 
   drawFloor(ctx, player) {
-    if (Sprite.loaded && Sprite.atlas && !this.atlasImageData) {
+    if (Sprite.loaded && Sprite.getAtlas('mundo') && !this.atlasImageData) {
       this._buildAtlasData();
     }
 
@@ -76,7 +78,7 @@ const Renderer = {
       return;
     }
 
-    if (!this.atlasImageData || !Sprite.atlasJson) {
+    if (!this.atlasImageData || !Sprite.getAtlas('mundo')) {
       this._drawSolidFloor(ctx, player);
       return;
     }
@@ -212,7 +214,6 @@ const Renderer = {
 
   drawObjects(ctx, player) {
     const billboards = Raycaster.getBillboards(player);
-    const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
     for (const obj of billboards) {
       let entityId = obj.entityId;
       if (!entityId && Map.current.tileSprites) entityId = Map.current.tileSprites[obj.tileId];
@@ -224,16 +225,19 @@ const Renderer = {
         const texX = ((stripe - obj.screenX + obj.width / 2) / obj.width);
         const texXClamped = Math.max(0, Math.min(1, texX));
 
-        if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
-          const sprite = Sprite.getEntity(entityId);
+        if (Sprite.loaded && entityId && Sprite.getEntity(entityId)) {
           const frame = Sprite.getAnimFrame(entityId, this.dt || 0.016);
           if (frame) {
-            const sx = frame.sx + Math.floor(texXClamped * frame.sw);
-            ctx.drawImage(
-              Sprite.atlas,
-              sx, frame.sy, 1, frame.sh,
-              stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY
-            );
+            const atlasName = frame.atlasName || 'mundo';
+            const atlas = Sprite.getAtlas(atlasName);
+            if (atlas && atlas.img) {
+              const sx = frame.sx + Math.floor(texXClamped * frame.sw);
+              ctx.drawImage(
+                atlas.img,
+                sx, frame.sy, 1, frame.sh,
+                stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY
+              );
+            }
           }
         } else {
           const colorId = obj.tileId || 1;
@@ -313,10 +317,15 @@ const Renderer = {
 
         if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
           const info = Sprite.getEntity(entityId);
+          const fw = info.frameW || ts;
+          const fh = info.frameH || ts;
+          const halfBlock = info.halfBlock && fh > ts;
+          const displayH = halfBlock ? fh / 2 : fh;
+          const dy = sy - (displayH - ts);
           if (info.frames > 1) {
-            Sprite.drawAnim(ctx, entityId, sx, sy, ts, ts, this.dt || 0.016);
+            Sprite.drawAnim(ctx, entityId, sx, dy, fw, displayH, this.dt || 0.016);
           } else {
-            Sprite.draw(ctx, entityId, sx, sy, ts, ts, 0);
+            Sprite.draw(ctx, entityId, sx, dy, fw, displayH, 0);
           }
         } else {
           const info = map.tileColors ? map.tileColors[tile] : null;
@@ -396,7 +405,11 @@ const Renderer = {
     const spriteAvailable = Sprite.loaded && Sprite.atlasJson;
     if (spriteAvailable && Sprite.getEntity('player')) {
       const playerFrame = player.moving ? 1 + Math.floor(Date.now() / 200) % 3 : 0;
-      Sprite.draw(ctx, 'player', px - ts / 2, py - ts / 2, ts, ts, playerFrame);
+      const pInfo = Sprite.getEntity('player');
+      const pW = pInfo ? (pInfo.frameW || ts) : ts;
+      const pH = pInfo ? (pInfo.frameH || ts) : ts;
+      const phb = pInfo && pInfo.halfBlock && pH > ts;
+      Sprite.draw(ctx, 'player', px - pW / 2, py - (phb ? pH / 2 : pH), pW, phb ? pH / 2 : pH, playerFrame);
 
       ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 2;
@@ -422,12 +435,20 @@ const Renderer = {
       for (const ch of Map.current.characters || []) {
         const cx = Math.round(ch.x * ts - Camera.x);
         const cy = Math.round(ch.y * ts - Camera.y);
-        Sprite.drawAnim(ctx, ch.entityId, cx - ts / 2, cy - ts, ts, ts, this.dt || 0.016);
+        const cInfo = Sprite.getEntity(ch.entityId);
+        const cW = cInfo ? (cInfo.frameW || ts) : ts;
+        const cH = cInfo ? (cInfo.frameH || ts) : ts;
+        const chb = cInfo && cInfo.halfBlock && cH > ts;
+        Sprite.drawAnim(ctx, ch.entityId, cx - cW / 2, cy - (chb ? cH / 2 : cH), cW, chb ? cH / 2 : cH, this.dt || 0.016);
       }
       for (const en of Map.current.enemies || []) {
         const ex = Math.round(en.x * ts - Camera.x);
         const ey = Math.round(en.y * ts - Camera.y);
-        Sprite.drawAnim(ctx, en.entityId, ex - ts / 2, ey - ts, ts, ts, this.dt || 0.016);
+        const eInfo = Sprite.getEntity(en.entityId);
+        const eW = eInfo ? (eInfo.frameW || ts) : ts;
+        const eH = eInfo ? (eInfo.frameH || ts) : ts;
+        const ehb = eInfo && eInfo.halfBlock && eH > ts;
+        Sprite.drawAnim(ctx, en.entityId, ex - eW / 2, ey - (ehb ? eH / 2 : eH), eW, ehb ? eH / 2 : eH, this.dt || 0.016);
       }
     }
   },

@@ -142,6 +142,7 @@ async function gameLoop(timestamp) {
   }
   Renderer.dt = dt;
   Renderer.render(Player);
+  HUD.render(Renderer.ctx, Player);
   requestAnimationFrame(gameLoop);
 }
 
@@ -155,7 +156,8 @@ async function init() {
     }
   } catch {}
   await loadMap(startMap);
-  await Sprite.load();
+  await Sprite.load(['mundo', 'entidades']);
+  await HUD.init();
   requestAnimationFrame(gameLoop);
 }
 

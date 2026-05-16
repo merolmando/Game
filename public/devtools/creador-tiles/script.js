@@ -487,6 +487,31 @@
     render();
   });
 
+  function updateCanvasSizeFromTile() {
+    const ts = parseInt(document.getElementById('propTileSize').value) || 32;
+    const tileW = parseInt(document.getElementById('propTileW').value) || 1;
+    const tileH = parseInt(document.getElementById('propTileH').value) || 1;
+    const newW = ts * tileW;
+    const newH = ts * tileH;
+    document.getElementById('canvasW').value = newW;
+    document.getElementById('canvasH').value = newH;
+    if (newW !== canvasW || newH !== canvasH) {
+      canvasW = newW;
+      canvasH = newH;
+      initFrames();
+      render();
+      renderPreview();
+    }
+  }
+
+  document.getElementById('propTileW').addEventListener('change', updateCanvasSizeFromTile);
+  document.getElementById('propTileH').addEventListener('change', updateCanvasSizeFromTile);
+  document.getElementById('propTileSize').addEventListener('change', updateCanvasSizeFromTile);
+  document.getElementById('propDirections').addEventListener('change', () => {
+    const dir = document.getElementById('propDirections').value;
+    document.getElementById('propMirror').disabled = dir === 'none';
+  });
+
   document.getElementById('btnApplySize').addEventListener('click', () => {
     const newW = parseInt(document.getElementById('canvasW').value) || 32;
     const newH = parseInt(document.getElementById('canvasH').value) || 32;
@@ -592,6 +617,14 @@
       frames: totalFrames,
       animSpeed: parseFloat(document.getElementById('propAnimSpeed').value) || 0,
       tileSize: parseInt(document.getElementById('propTileSize').value) || canvasW,
+      tileW: parseInt(document.getElementById('propTileW').value) || 1,
+      tileH: parseInt(document.getElementById('propTileH').value) || 1,
+      directions: document.getElementById('propDirections').value,
+      mirror: document.getElementById('propMirror').checked,
+      halfBlock: document.getElementById('propHalfBlock').checked,
+      blockVision: document.getElementById('propBlockVision').checked,
+      halfSolid: document.getElementById('propHalfSolid').checked,
+      atlas: document.getElementById('propAtlas').value,
       defaultColor: currentColor,
     };
     const layerData = {};
@@ -606,32 +639,42 @@
 
   function spriteToBase64() {
     const ts = parseInt(document.getElementById('propTileSize').value) || canvasW;
-    const spriteW = ts * totalFrames;
-    const spriteH = ts;
+    const tileW = parseInt(document.getElementById('propTileW').value) || 1;
+    const tileH = parseInt(document.getElementById('propTileH').value) || 1;
+    const directions = document.getElementById('propDirections').value;
+
+    let numDirs = 1;
+    if (directions === '4dir') numDirs = 3;
+    else if (directions === '8dir') numDirs = 5;
+
+    const frameW = ts * tileW;
+    const frameH = ts * tileH;
+    const spriteW = frameW * totalFrames * numDirs;
+    const spriteH = frameH;
 
     const c = document.createElement('canvas');
     c.width = spriteW;
     c.height = spriteH;
     const cx = c.getContext('2d');
 
-    for (let f = 0; f < totalFrames; f++) {
-      const grid = framesData[f] || framesData[0];
-      if (!grid) continue;
-      const scaleX = ts / canvasW;
-      const scaleY = ts / canvasH;
-      cx.save();
-      cx.scale(scaleX, scaleY);
-      cx.translate(f * canvasW, 0);
-      for (let r = 0; r < grid.length; r++) {
-        for (let c2 = 0; c2 < grid[r].length; c2++) {
-          const color = grid[r][c2];
-          if (color) {
-            cx.fillStyle = color;
-            cx.fillRect(c2, r, 1, 1);
+    const scaleX = ts / canvasW;
+    const scaleY = ts / canvasH;
+
+    for (let d = 0; d < numDirs; d++) {
+      for (let f = 0; f < totalFrames; f++) {
+        const grid = framesData[f] || framesData[0];
+        if (!grid) continue;
+        const dx = (d * totalFrames + f) * frameW;
+        for (let r = 0; r < grid.length; r++) {
+          for (let c2 = 0; c2 < grid[r].length; c2++) {
+            const color = grid[r][c2];
+            if (color) {
+              cx.fillStyle = color;
+              cx.fillRect(dx + c2 * scaleX, r * scaleY, scaleX, scaleY);
+            }
           }
         }
       }
-      cx.restore();
     }
 
     return c.toDataURL('image/png');
@@ -696,6 +739,7 @@
         const div = document.createElement('div');
         div.className = 'entity-item';
         div.innerHTML = '<span class="entity-name">' + e.id + '</span>' +
+          '<span class="entity-atlas">' + (e.atlas || 'mundo') + '</span>' +
           '<span class="entity-del" data-id="' + e.id + '">\u2715</span>';
         div.addEventListener('click', () => loadEntityForEdit(e.id));
         const delBtn = div.querySelector('.entity-del');
@@ -726,7 +770,13 @@
     const ts = Date.now();
 
     try {
-      const atlasRes = await fetch('/generated/atlas.json?t=' + ts);
+      const entRes = await fetch('/api/entidades?t=' + ts);
+      const entities = await entRes.json();
+      const ent = entities.find(e => e.id === id);
+      if (!ent) return;
+
+      const atlasName = ent.atlas || 'mundo';
+      const atlasRes = await fetch('/generated/atlas_' + atlasName + '.json?t=' + ts);
       const atlas = await atlasRes.json();
       const spriteMeta = atlas.sprites[id];
       if (!spriteMeta) {
@@ -734,20 +784,23 @@
         return;
       }
 
-      const entRes = await fetch('/api/entidades?t=' + ts);
-      const entities = await entRes.json();
-      const ent = entities.find(e => e.id === id);
-      if (!ent) return;
-
       const fw = spriteMeta.frameW || 32;
       const fh = spriteMeta.frameH || 32;
 
       document.getElementById('propName').value = ent.id;
       document.getElementById('propType').value = ent.type || 'tile';
+      document.getElementById('propAtlas').value = atlasName;
       document.getElementById('propSolid').checked = !!ent.solid;
       document.getElementById('propFrames').value = ent.frames || 1;
       document.getElementById('propAnimSpeed').value = ent.animSpeed || 0;
       document.getElementById('propTileSize').value = ent.tileSize || fw;
+      document.getElementById('propTileW').value = ent.tileW || 1;
+      document.getElementById('propTileH').value = ent.tileH || 1;
+      document.getElementById('propDirections').value = ent.directions || 'none';
+      document.getElementById('propMirror').checked = ent.mirror !== false;
+      document.getElementById('propHalfBlock').checked = !!ent.halfBlock;
+      document.getElementById('propBlockVision').checked = !!ent.blockVision;
+      document.getElementById('propHalfSolid').checked = !!ent.halfSolid;
       document.getElementById('canvasW').value = fw;
       document.getElementById('canvasH').value = fh;
 
@@ -809,7 +862,7 @@
       img.onerror = () => {
         setSaveStatus('\u274C Error al cargar imagen del atlas', '#f85149');
       };
-      img.src = '/generated/atlas.png?t=' + ts;
+      img.src = '/generated/atlas_' + atlasName + '.png?t=' + ts;
     } catch (err) {
       setSaveStatus('\u274C Error al cargar entidad', '#f85149');
     }
@@ -848,6 +901,7 @@
     currentFrame = 0;
     zoom = 8;
     document.getElementById('zoomLabel').textContent = '800%';
+    document.getElementById('propMirror').disabled = document.getElementById('propDirections').value === 'none';
     initFrames();
     initLayers();
     syncFrameNav();

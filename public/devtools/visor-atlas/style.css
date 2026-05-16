@@ -54,6 +54,15 @@
 }
 .entity-item .e-name { flex: 1; color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entity-item .e-frames { color: #484f58; font-size: 0.7rem; white-space: nowrap; }
+.entity-item .e-atlas-tag {
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  background: #1f6feb22;
+  color: #58a6ff;
+  font-family: monospace;
+  white-space: nowrap;
+}
 .entity-item .e-badge {
   font-size: 0.6rem;
   padding: 0.05rem 0.3rem;

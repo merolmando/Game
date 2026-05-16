@@ -100,11 +100,54 @@
               </select>
             </div>
             <div class="prop-field">
+              <label>Atlas</label>
+              <select id="propAtlas" class="prop-select">
+                <option value="mundo">Mundo</option>
+                <option value="entidades">Entidades</option>
+                <option value="ui">UI</option>
+                <option value="efectos">Efectos</option>
+              </select>
+            </div>
+            <div class="prop-field">
               <label><input type="checkbox" id="propSolid"> Sólido</label>
             </div>
             <div class="prop-field">
               <label>Tamaño tile (px)</label>
               <input type="number" id="propTileSize" value="32" min="4" max="256" class="prop-input">
+            </div>
+            <div class="prop-field-row">
+              <div class="prop-field" style="flex:1">
+                <label>Tile Ancho</label>
+                <input type="number" id="propTileW" value="1" min="1" max="8" class="prop-input">
+              </div>
+              <div class="prop-field" style="flex:1">
+                <label>Tile Alto</label>
+                <input type="number" id="propTileH" value="1" min="1" max="8" class="prop-input">
+              </div>
+            </div>
+            <div class="prop-field">
+              <label>Direcciones</label>
+              <select id="propDirections" class="prop-select">
+                <option value="none">Ninguna</option>
+                <option value="4dir">4 direcciones</option>
+                <option value="8dir">8 direcciones</option>
+              </select>
+            </div>
+            <div class="prop-field-row">
+              <div class="prop-field" style="flex:1">
+                <label><input type="checkbox" id="propMirror" checked> Espejar</label>
+              </div>
+              <div class="prop-field" style="flex:1">
+                <label><input type="checkbox" id="propHalfBlock"> Medio bloque</label>
+              </div>
+            </div>
+            <div class="prop-field-row">
+              <div class="prop-field" style="flex:1">
+                <label><input type="checkbox" id="propBlockVision"> Bloquea visión</label>
+              </div>
+              <div class="prop-field" style="flex:1">
+                <label><input type="checkbox" id="propHalfSolid"> Media sólido</label>
+              </div>
             </div>
             <div class="prop-field">
               <label>Frames <span id="framesAuto" class="frames-auto">(automático)</span></label>

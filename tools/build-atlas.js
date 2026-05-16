@@ -39,45 +39,229 @@ function saveCache(fingerprint) {
   fs.writeFileSync(cachePath, JSON.stringify({ fingerprint, updatedAt: Date.now() }, null, 2));
 }
 
-async function generatePlaceholderSprite(entityId, entityData) {
+function entitySpriteSize(entityData) {
+  const ts = entityData.tileSize || TILE_SIZE;
+  const frames = entityData.frames || 1;
+  const tileW = entityData.tileW || 1;
+  const tileH = entityData.tileH || 1;
+  const directions = entityData.directions || 'none';
+
+  let numDirs = 1;
+  if (directions === '4dir') numDirs = 3;
+  else if (directions === '8dir') numDirs = 5;
+
+  return {
+    frameW: ts * tileW,
+    frameH: ts * tileH,
+    totalW: ts * tileW * frames * numDirs,
+    totalH: ts * tileH,
+    numDirs,
+  };
+}
+
+function buildDirFrames(entityData) {
+  const frames = entityData.frames || 1;
+  const directions = entityData.directions || 'none';
+  const mirror = entityData.mirror !== false;
+
+  if (directions === 'none') {
+    return { default: { frameOffset: 0, mirror: false } };
+  }
+
+  if (directions === '4dir') {
+    return {
+      up: { frameOffset: 0, mirror: false },
+      right: { frameOffset: frames, mirror: false },
+      down: { frameOffset: frames * 2, mirror: false },
+      left: { frameOffset: frames, mirror },
+    };
+  }
+
+  if (directions === '8dir') {
+    return {
+      up: { frameOffset: 0, mirror: false },
+      upRight: { frameOffset: frames, mirror: false },
+      right: { frameOffset: frames * 2, mirror: false },
+      downRight: { frameOffset: frames * 3, mirror: false },
+      down: { frameOffset: frames * 4, mirror: false },
+      upLeft: { frameOffset: frames, mirror },
+      left: { frameOffset: frames * 2, mirror },
+      downLeft: { frameOffset: frames * 3, mirror },
+    };
+  }
+
+  return { default: { frameOffset: 0, mirror: false } };
+}
+
+async function generatePlaceholderSprite(entityData) {
   const color = entityData.defaultColor || '#888';
   const hex = color.replace('#', '');
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
+  const size = entitySpriteSize(entityData);
+  const totalW = size.totalW;
+  const totalH = size.totalH;
   const ts = entityData.tileSize || TILE_SIZE;
-  const frames = entityData.frames || 1;
-  const totalW = ts * frames;
+  const tileH = entityData.tileH || 1;
 
-  const channels = [];
-  for (let i = 0; i < frames; i++) {
-    const brightness = 1 - i * 0.08;
-    const rr = Math.min(255, Math.round(r * brightness));
-    const gg = Math.min(255, Math.round(g * brightness));
-    const bb = Math.min(255, Math.round(b * brightness));
+  const frameH = ts * tileH;
+  const svg = `<svg width="${totalW}" height="${totalH}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${totalW}" height="${totalH}" fill="rgb(${r},${g},${b})" rx="2"/>
+    <line x1="${totalW * 0.25}" y1="${frameH * 0.5}" x2="${totalW * 0.75}" y2="${frameH * 0.5}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <line x1="${totalW * 0.5}" y1="${frameH * 0.25}" x2="${totalW * 0.5}" y2="${frameH * 0.75}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  </svg>`;
 
-    const svg = `<svg width="${ts}" height="${ts}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${ts}" height="${ts}" fill="rgb(${rr},${gg},${bb})" rx="2"/>
-      <rect x="2" y="2" width="${ts - 4}" height="${ts - 4}" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1" rx="1"/>
-      <line x1="${ts * 0.25}" y1="${ts * 0.5}" x2="${ts * 0.75}" y2="${ts * 0.5}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-      <line x1="${ts * 0.5}" y1="${ts * 0.25}" x2="${ts * 0.5}" y2="${ts * 0.75}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    </svg>`;
-    channels.push(svg);
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+async function extendSprite(filePath, targetW, targetH) {
+  const raw = await sharp(fs.readFileSync(filePath)).ensureAlpha().metadata();
+  if (raw.width === targetW && raw.height === targetH) {
+    return sharp(fs.readFileSync(filePath)).ensureAlpha().toBuffer();
+  }
+  const pipeline = sharp(fs.readFileSync(filePath)).ensureAlpha();
+  if (raw.width < targetW || raw.height < targetH) {
+    return pipeline.extend({
+      top: 0, left: 0,
+      right: Math.max(0, targetW - raw.width),
+      bottom: Math.max(0, targetH - raw.height),
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    }).toBuffer();
+  }
+  return pipeline.extract({ left: 0, top: 0, width: targetW, height: targetH }).toBuffer();
+}
+
+function loadEntityData(entityId) {
+  const dirPath = path.join(ENTIDADES_DIR, entityId);
+  const entityPath = path.join(dirPath, 'entity.js');
+  if (!fs.existsSync(entityPath)) return null;
+  return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+}
+
+async function buildAtlasGroup(groupName, entities) {
+  if (entities.length === 0) return;
+
+  const sprites = {};
+  const compositeOps = [];
+  let atlasWidth = 0;
+  let atlasHeight = 0;
+  let currentRowX = 0;
+  let currentRowY = 0;
+  let currentRowH = 0;
+
+  const sorted = [...entities].sort((a, b) => {
+    const aH = (a.entityData || loadEntityData(a.entityId) || {}).tileH || 1;
+    const bH = (b.entityData || loadEntityData(b.entityId) || {}).tileH || 1;
+    return bH - aH;
+  });
+
+  for (const { entityId } of sorted) {
+    const entityData = loadEntityData(entityId);
+    if (!entityData) {
+      console.warn(`[atlas] ${entityId}: sin entity.js, se omite`);
+      continue;
+    }
+
+    const dirPath = path.join(ENTIDADES_DIR, entityId);
+    const spritePath = path.join(dirPath, 'sprite.png');
+    const size = entitySpriteSize(entityData);
+
+    if (currentRowX + size.totalW > 2048 && currentRowX > 0) {
+      currentRowX = 0;
+      currentRowY += currentRowH;
+      currentRowH = 0;
+    }
+
+    let spriteBuffer;
+    if (fs.existsSync(spritePath)) {
+      spriteBuffer = await extendSprite(spritePath, size.totalW, size.totalH);
+    } else {
+      console.log(`[atlas] ${entityId}: generando placeholder`);
+      spriteBuffer = await generatePlaceholderSprite(entityData);
+    }
+
+    compositeOps.push({
+      input: spriteBuffer,
+      top: currentRowY,
+      left: currentRowX,
+    });
+
+    const spriteEntry = {
+      x: currentRowX,
+      y: currentRowY,
+      w: size.totalW,
+      h: size.totalH,
+      frames: entityData.frames || 1,
+      frameW: size.frameW,
+      frameH: size.frameH,
+      solid: entityData.solid || false,
+      blockVision: entityData.blockVision || false,
+      halfBlock: entityData.halfBlock || false,
+      halfSolid: entityData.halfSolid || false,
+      tileW: entityData.tileW || 1,
+      tileH: entityData.tileH || 1,
+      type: entityData.type || 'tile',
+      name: entityData.name || entityId,
+      color: entityData.defaultColor || '#888',
+      animSpeed: entityData.animSpeed || 0,
+      directions: entityData.directions || 'none',
+      mirror: entityData.mirror !== false,
+      dirFrames: buildDirFrames(entityData),
+      atlas: groupName,
+    };
+
+    if (entityData.layers && Object.keys(entityData.layers).length > 0) {
+      spriteEntry.layers = {};
+      for (const layerName of Object.keys(entityData.layers)) {
+        const layer = entityData.layers[layerName];
+        spriteEntry.layers[layerName] = {
+          frameW: size.frameW,
+          frameH: size.frameH,
+          frames: layer.frames || entityData.frames || 1,
+          animSpeed: layer.animSpeed || entityData.animSpeed || 0,
+        };
+      }
+    }
+
+    sprites[entityId] = spriteEntry;
+    currentRowX += size.totalW;
+    currentRowH = Math.max(currentRowH, size.totalH);
+    atlasWidth = Math.max(atlasWidth, currentRowX);
   }
 
-  const spriteBuffers = await Promise.all(
-    channels.map(svg => sharp(Buffer.from(svg)).png().toBuffer())
-  );
+  atlasHeight = currentRowY + currentRowH;
 
-  if (frames === 1) return spriteBuffers[0];
+  if (compositeOps.length === 0) {
+    console.log(`[atlas] Grupo "${groupName}": sin entidades para compilar.`);
+    return;
+  }
 
-  const composite = await sharp({
-    create: { width: totalW, height: ts, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
-  }).composite(
-    spriteBuffers.map((buf, i) => ({ input: buf, top: 0, left: i * ts }))
-  ).png().toBuffer();
+  const atlasBuffer = await sharp({
+    create: { width: atlasWidth, height: atlasHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
+  })
+    .composite(compositeOps)
+    .png()
+    .toBuffer();
 
-  return composite;
+  const atlasPath = path.join(GENERATED_DIR, `atlas_${groupName}.png`);
+  fs.writeFileSync(atlasPath, atlasBuffer);
+
+  const entityOrder = entities.map(e => e.entityId);
+
+  const manifest = {
+    tileSize: TILE_SIZE,
+    width: atlasWidth,
+    height: atlasHeight,
+    group: groupName,
+    sprites,
+    entityOrder,
+  };
+
+  const manifestPath = path.join(GENERATED_DIR, `atlas_${groupName}.json`);
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+  console.log(`[atlas] atlas_${groupName}: ${atlasWidth}x${atlasHeight}px, ${Object.keys(sprites).length} entidades`);
 }
 
 async function build() {
@@ -99,112 +283,20 @@ async function build() {
     .filter(d => d.isDirectory())
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const sprites = {};
-  let currentX = 0;
-  const ts = TILE_SIZE;
-  const rowHeight = ts;
-
-  const compositeOps = [];
-
+  const groups = {};
   for (const entry of entries) {
-    const entityId = entry.name;
-    const dirPath = path.join(ENTIDADES_DIR, entityId);
-    const entityPath = path.join(dirPath, 'entity.js');
-    const spritePath = path.join(dirPath, 'sprite.png');
-
-    if (!fs.existsSync(entityPath)) {
-      console.warn(`[atlas] ${entityId}: sin entity.js, se omite`);
-      continue;
-    }
-
-    const entityData = JSON.parse(fs.readFileSync(entityPath, 'utf8'));
-    const frames = entityData.frames || 1;
-    const entityTileSize = entityData.tileSize || ts;
-
-    let spriteBuffer;
-    if (fs.existsSync(spritePath)) {
-      spriteBuffer = await sharp(fs.readFileSync(spritePath))
-        .ensureAlpha()
-        .toBuffer();
-    } else {
-      console.log(`[atlas] ${entityId}: generando placeholder`);
-      spriteBuffer = await generatePlaceholderSprite(entityId, entityData);
-    }
-
-    const spriteWidth = entityTileSize * frames;
-    const spriteHeight = entityTileSize;
-
-    compositeOps.push({
-      input: spriteBuffer,
-      top: 0,
-      left: currentX,
-    });
-
-    const spriteEntry = {
-      x: currentX,
-      y: 0,
-      w: entityTileSize,
-      h: entityTileSize,
-      frames: frames,
-      frameW: entityTileSize,
-      frameH: entityTileSize,
-      solid: entityData.solid || false,
-      type: entityData.type || 'tile',
-      name: entityData.name || entityId,
-      color: entityData.defaultColor || '#888',
-      animSpeed: entityData.animSpeed || 0,
-    };
-
-    if (entityData.layers && Object.keys(entityData.layers).length > 0) {
-      spriteEntry.layers = {};
-      for (const layerName of Object.keys(entityData.layers)) {
-        const layer = entityData.layers[layerName];
-        spriteEntry.layers[layerName] = {
-          frameW: entityTileSize,
-          frameH: entityTileSize,
-          frames: layer.frames || frames,
-          animSpeed: layer.animSpeed || entityData.animSpeed || 0,
-        };
-      }
-    }
-
-    sprites[entityId] = spriteEntry;
-
-    currentX += spriteWidth;
+    const entityData = loadEntityData(entry.name);
+    const atlas = entityData ? (entityData.atlas || 'mundo') : 'mundo';
+    if (!groups[atlas]) groups[atlas] = [];
+    groups[atlas].push({ entityId: entry.name, entityData });
   }
 
-  if (compositeOps.length === 0) {
-    console.log('[atlas] No hay entidades para compilar.');
-    return false;
+  for (const [groupName, groupEntities] of Object.entries(groups)) {
+    await buildAtlasGroup(groupName, groupEntities);
   }
-
-  const atlasWidth = currentX;
-  const atlasHeight = rowHeight;
-
-  const atlasBuffer = await sharp({
-    create: { width: atlasWidth, height: atlasHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
-  })
-    .composite(compositeOps)
-    .png()
-    .toBuffer();
-
-  const atlasPath = path.join(GENERATED_DIR, 'atlas.png');
-  fs.writeFileSync(atlasPath, atlasBuffer);
-
-  const manifest = {
-    tileSize: ts,
-    width: atlasWidth,
-    height: atlasHeight,
-    sprites,
-    entityOrder: entries.map(e => e.name),
-  };
-
-  const manifestPath = path.join(GENERATED_DIR, 'atlas.json');
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
   saveCache(fingerprint);
-  console.log(`[atlas] Atlas generado: ${atlasWidth}x${atlasHeight}px, ${Object.keys(sprites).length} entidades`);
-
+  console.log(`[atlas] Total: ${Object.keys(groups).length} grupos generados`);
   return true;
 }
 

@@ -45,6 +45,7 @@ const TOOL_ROUTES = {
   '/desarrollo/herramientas/creador-tiles': path.join(PUBLIC_DIR, 'devtools/creador-tiles/index.html'),
   '/desarrollo/herramientas/cortador-texturas': path.join(PUBLIC_DIR, 'devtools/cortador-texturas/index.html'),
   '/desarrollo/herramientas/visor-atlas': path.join(PUBLIC_DIR, 'devtools/visor-atlas/index.html'),
+  '/desarrollo/herramientas/editor-hud': path.join(PUBLIC_DIR, 'devtools/editor-hud/index.html'),
 };
 
 function serveFile(res, filePath, contentType) {
@@ -129,6 +130,8 @@ function deleteEntity(entityId) {
 
 const MAPS_DIR = path.join(PUBLIC_DIR, 'maps');
 const MAPS_CONFIG = path.join(MAPS_DIR, 'config.json');
+
+const HUD_DIR = path.join(PUBLIC_DIR, 'generated', 'hud');
 
 function listMaps() {
   if (!fs.existsSync(MAPS_DIR)) return [];
@@ -285,6 +288,50 @@ const server = http.createServer((req, res) => {
       }
     }
     return sendJson(res, 200, { found: false });
+  }
+
+  if (method === 'GET' && url === '/api/hud') {
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const name = parsedUrl.searchParams.get('name');
+    if (name) {
+      const filePath = path.join(HUD_DIR, name + '.json');
+      if (fs.existsSync(filePath)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          return sendJson(res, 200, data);
+        } catch { return sendJson(res, 404, { error: 'Error al leer HUD' }); }
+      } else {
+        return sendJson(res, 404, { error: 'HUD no encontrado' });
+      }
+    }
+    if (!fs.existsSync(HUD_DIR)) return sendJson(res, 200, []);
+    const files = fs.readdirSync(HUD_DIR).filter(f => f.endsWith('.json'));
+    const list = files.map(f => ({ name: f.replace('.json', ''), file: f }));
+    return sendJson(res, 200, list);
+  }
+
+  if (method === 'POST' && url === '/api/hud') {
+    return parseJsonBody(req).then(body => {
+      const { name, data } = body;
+      if (!name || !data) return sendJson(res, 400, { error: 'name y data son requeridos' });
+      if (!fs.existsSync(HUD_DIR)) fs.mkdirSync(HUD_DIR, { recursive: true });
+      fs.writeFileSync(path.join(HUD_DIR, name + '.json'), JSON.stringify(data, null, 2));
+      sendJson(res, 200, { ok: true, name });
+    }).catch(err => sendJson(res, 400, { error: err.message }));
+  }
+
+  if (method === 'DELETE' && url.startsWith('/api/hud/')) {
+    const hudName = url.replace('/api/hud/', '');
+    if (!hudName) return sendJson(res, 400, { error: 'name requerido' });
+    const filePath = path.join(HUD_DIR, hudName + '.json');
+    if (!fs.existsSync(filePath)) return sendJson(res, 404, { error: 'HUD no encontrado' });
+    try {
+      fs.rmSync(filePath);
+      sendJson(res, 200, { ok: true, name: hudName });
+    } catch (err) {
+      sendJson(res, 500, { error: err.message });
+    }
+    return;
   }
 
   if (ROUTES[url]) {

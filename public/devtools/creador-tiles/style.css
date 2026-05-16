@@ -22,6 +22,13 @@
 .tool-icon-btn.active { border-color: #1f6feb; color: #58a6ff; background: #1f6feb22; }
 .tool-icon-btn svg { width: 20px; height: 20px; }
 
+.prop-field-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.prop-field-row .prop-field {
+  margin-bottom: 0;
+}
 .color-palette {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -174,6 +181,15 @@
 .entity-item.active { border-color: #1f6feb; background: #1f6feb22; }
 .entity-item.active .entity-name { color: #58a6ff; }
 .entity-item .entity-name { flex: 1; color: #c9d1d9; }
+.entity-item .entity-atlas {
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  background: #1f6feb22;
+  color: #58a6ff;
+  font-family: monospace;
+  white-space: nowrap;
+}
 .entity-item .entity-del {
   color: #f85149;
   cursor: pointer;

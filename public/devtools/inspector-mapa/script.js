@@ -23,49 +23,64 @@
 
   const tilePalette = [];
 
+  let atlasImages = {};
   let atlasSprites = {};
-  let atlasImg = null;
 
-  async function loadAtlasImage() {
+  async function loadAtlases() {
     try {
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = '/generated/atlas.png?t=' + Date.now();
-      });
-      atlasImg = img;
-    } catch {
-      atlasImg = null;
-    }
-  }
+      const knownAtlases = ['mundo', 'entidades', 'ui', 'efectos'];
+      const ts = Date.now();
 
-  async function loadExternalPalette() {
-    try {
-      const [res] = await Promise.all([
-        fetch('/generated/atlas.json?t=' + Date.now()),
-        loadAtlasImage(),
-      ]);
-      if (res.ok) {
-        const atlas = await res.json();
-        atlasSprites = atlas.sprites || {};
-        const ids = Object.keys(atlasSprites).sort();
-        const palette = [{ id: 0, name: 'Vac\u00EDo', color: '#000000', entityId: null }];
-        ids.forEach((entityId, idx) => {
-          const s = atlasSprites[entityId];
-          palette.push({
-            id: idx + 1,
-            name: s.name || entityId,
-            color: s.color || '#888',
-            entityId: entityId,
-            solid: s.solid || false,
-          });
+      const results = await Promise.all(knownAtlases.map(async name => {
+        try {
+          const [res, img] = await Promise.all([
+            fetch('/generated/atlas_' + name + '.json?t=' + ts),
+            new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = '/generated/atlas_' + name + '.png?t=' + ts;
+            }),
+          ]);
+          const json = await res.json();
+          return { name, img, json };
+        } catch {
+          return null;
+        }
+      }));
+
+      atlasImages = {};
+      atlasSprites = {};
+
+      for (const r of results) {
+        if (!r) continue;
+        atlasImages[r.name] = r.img;
+        const sprites = r.json.sprites || {};
+        Object.keys(sprites).forEach(entityId => {
+          sprites[entityId].atlasName = r.name;
+          atlasSprites[entityId] = sprites[entityId];
         });
-        tilePalette.length = 0;
-        tilePalette.push(...palette);
       }
+
+      const numAtlases = Object.keys(atlasImages).length;
+      if (numAtlases === 0) throw new Error('No se cargaron atlases');
+
+      const ids = Object.keys(atlasSprites).sort();
+      const palette = [{ id: 0, name: 'Vac\u00EDo', color: '#000000', entityId: null }];
+      ids.forEach((entityId, idx) => {
+        const s = atlasSprites[entityId];
+        palette.push({
+          id: idx + 1,
+          name: s.name || entityId,
+          color: s.color || '#888',
+          entityId: entityId,
+          solid: s.solid || false,
+        });
+      });
+      tilePalette.length = 0;
+      tilePalette.push(...palette);
     } catch (e) {
-      console.warn('No se pudo cargar el atlas, usando paleta por defecto');
+      console.warn('No se pudo cargar atlas múltiple, usando paleta por defecto');
       if (tilePalette.length === 0) {
         tilePalette.push(
           { id: 0, name: 'Vac\u00EDo', color: '#000000', entityId: null },
@@ -158,17 +173,20 @@
       div.style.background = t.color;
       if (t.id === 0) div.style.background = '#0d1117';
 
-      if (t.id > 0 && t.entityId && atlasImg && atlasSprites[t.entityId]) {
+      if (t.id > 0 && t.entityId && atlasSprites[t.entityId]) {
         const sprite = atlasSprites[t.entityId];
-        const c = document.createElement('canvas');
-        c.width = sprite.frameW;
-        c.height = sprite.frameH;
-        c.style.width = '100%';
-        c.style.height = '100%';
-        c.style.display = 'block';
-        const cx = c.getContext('2d');
-        cx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, 0, 0, sprite.frameW, sprite.frameH);
-        div.appendChild(c);
+        const img = sprite.atlasName ? atlasImages[sprite.atlasName] : null;
+        if (img) {
+          const c = document.createElement('canvas');
+          c.width = sprite.frameW;
+          c.height = sprite.frameH;
+          c.style.width = '100%';
+          c.style.height = '100%';
+          c.style.display = 'block';
+          const cx = c.getContext('2d');
+          cx.drawImage(img, sprite.x, sprite.y, sprite.frameW, sprite.frameH, 0, 0, sprite.frameW, sprite.frameH);
+          div.appendChild(c);
+        }
       }
 
       if (t.id > 0) {
@@ -216,10 +234,15 @@
     return t ? t.color : '#888';
   }
 
+  function getCellPx() {
+    return zoom * (mapData ? (mapData.tileSize || tileSize) : tileSize);
+  }
+
   function resizeCanvas() {
     if (!mapData) return;
-    const w = mapData.width * zoom;
-    const h = mapData.height * zoom;
+    const cellPx = getCellPx();
+    const w = mapData.width * cellPx;
+    const h = mapData.height * cellPx;
     canvas.width = Math.max(w, 1);
     canvas.height = Math.max(h, 1);
     canvas.style.width = w + 'px';
@@ -231,7 +254,7 @@
     resizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const cellPx = zoom * ((mapData.tileSize || tileSize) / tileSize);
+    const cellPx = zoom * (mapData.tileSize || tileSize);
 
     const isEntityLayer = currentLayer === 'personajes' || currentLayer === 'enemigos';
 
@@ -274,8 +297,9 @@
           if (tile > 0) {
             const entityId = mapData.tileSprites ? mapData.tileSprites[tile] : null;
             const sprite = entityId ? atlasSprites[entityId] : null;
-            if (atlasImg && sprite) {
-              ctx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, x, y, cellPx, cellPx);
+            const img = sprite && sprite.atlasName ? atlasImages[sprite.atlasName] : null;
+            if (img && sprite) {
+              ctx.drawImage(img, sprite.x, sprite.y, sprite.frameW, sprite.frameH, x, y, cellPx, cellPx);
             } else {
               ctx.fillStyle = getTileColor(tile);
               ctx.fillRect(x, y, cellPx, cellPx);
@@ -317,8 +341,9 @@
         const exitTileId = mapData.layers && mapData.layers.estructura ? mapData.layers.estructura[e.tileY]?.[e.tileX] : null;
         const entityId = exitTileId && mapData.tileSprites ? mapData.tileSprites[exitTileId] : null;
         const sprite = entityId ? atlasSprites[entityId] : null;
-        if (atlasImg && sprite) {
-          ctx.drawImage(atlasImg, sprite.x, sprite.y, sprite.frameW, sprite.frameH, ex, ey, cellPx, cellPx);
+        const img = sprite && sprite.atlasName ? atlasImages[sprite.atlasName] : null;
+        if (img && sprite) {
+          ctx.drawImage(img, sprite.x, sprite.y, sprite.frameW, sprite.frameH, ex, ey, cellPx, cellPx);
         } else {
           ctx.fillStyle = 'rgba(255,215,0,0.3)';
           ctx.fillRect(ex, ey, cellPx, cellPx);
@@ -373,6 +398,16 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(e.entityId || '?', ex, ey - 10);
+        if (e.direction) {
+          ctx.strokeStyle = currentLayer === 'personajes' ? '#58a6ff' : '#ff7b72';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          const dirAngle = { up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 };
+          const a = dirAngle[e.direction] || 0;
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex + Math.cos(a) * 14, ey + Math.sin(a) * 14);
+          ctx.stroke();
+        }
         if (cellPx >= 24) {
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
           ctx.fillRect(ex - cellPx / 2, ey - cellPx / 2, cellPx, cellPx);
@@ -474,6 +509,9 @@
         html += '<span class="exit-label-text">' + (e.entityId || '\u2014') + '</span>';
         html += '</div>';
         html += '<div class="exit-row"><span class="exit-label">Pos</span><span class="exit-value">(' + e.x.toFixed(1) + ', ' + e.y.toFixed(1) + ')</span></div>';
+        if (e.direction) {
+          html += '<div class="exit-row"><span class="exit-label">Dir</span><span class="exit-value">' + e.direction + '</span></div>';
+        }
         html += '<div class="exit-card-actions">';
         html += '<span class="exit-edit" data-entity="' + i + '">Editar</span>';
         html += '<span class="exit-del" data-entity="' + i + '">Eliminar</span>';
@@ -521,13 +559,27 @@
       return e && (e.type === 'character' || !e.type);
     }).sort();
 
-    const entityOpts = entityList.map(id =>
-      '<option value="' + id + '"' + (entityData.entityId === id ? ' selected' : '') + '>' + id + '</option>'
-    ).join('');
+    function getDirOpts(entityId, currentDir) {
+      const s = atlasSprites[entityId];
+      const df = s && s.dirFrames;
+      if (!df) return '';
+      const keys = Object.keys(df);
+      return keys.map(k =>
+        '<option value="' + k + '"' + (currentDir === k ? ' selected' : '') + '>' + k + '</option>'
+      ).join('');
+    }
+
+    const entityOpts = entityList.map(id => {
+      const e = atlasSprites[id];
+      const tag = e && e.atlasName ? ' [' + e.atlasName + ']' : '';
+      return '<option value="' + id + '"' + (entityData.entityId === id ? ' selected' : '') + '>' + id + tag + '</option>';
+    }).join('');
 
     showModal((isEdit ? 'Editar ' : 'A\u00F1adir ') + label,
       '<div class="modal-field"><label>Entidad</label><select id="fEntityId" style="width:100%">'
         + '<option value="">Seleccionar...</option>' + entityOpts + '</select></div>' +
+      '<div class="modal-field" id="fDirField" style="' + (!atlasSprites[entityData.entityId] || !atlasSprites[entityData.entityId].dirFrames ? 'display:none' : '') + '"><label>Direcci\u00F3n</label><select id="fDirection" style="width:100%">'
+        + getDirOpts(entityData.entityId, entityData.direction) + '</select></div>' +
       '<div class="modal-field"><label>Posici\u00F3n X</label><input type="number" id="fEntityX" value="' + entityData.x + '" step="0.1" min="0" max="' + (mapData ? mapData.width : 99) + '"></div>' +
       '<div class="modal-field"><label>Posici\u00F3n Y</label><input type="number" id="fEntityY" value="' + entityData.y + '" step="0.1" min="0" max="' + (mapData ? mapData.height : 99) + '"></div>',
       () => {
@@ -537,6 +589,10 @@
         if (!entityId) { alert('Seleccion\u00E1 una entidad'); return; }
 
         const obj = { entityId, x, y };
+        const dirSel = document.getElementById('fDirection');
+        if (dirSel && dirSel.options.length > 0) {
+          obj.direction = dirSel.value;
+        }
         const arr = isChar ? mapData.characters : mapData.enemies;
         if (!arr) return;
         if (isEdit && index >= 0) {
@@ -548,6 +604,26 @@
         render();
       }
     );
+
+    setTimeout(() => {
+      const entitySel = document.getElementById('fEntityId');
+      if (!entitySel) return;
+      entitySel.addEventListener('change', () => {
+        const dirField = document.getElementById('fDirField');
+        const dirSel2 = document.getElementById('fDirection');
+        if (!dirField || !dirSel2) return;
+        const s = atlasSprites[entitySel.value];
+        const df = s && s.dirFrames;
+        if (df) {
+          dirField.style.display = '';
+          const keys = Object.keys(df);
+          dirSel2.innerHTML = keys.map(k => '<option value="' + k + '">' + k + '</option>').join('');
+        } else {
+          dirField.style.display = 'none';
+          dirSel2.innerHTML = '';
+        }
+      });
+    }, 0);
   }
 
   function showTileProps(col, row) {
@@ -608,6 +684,55 @@
     selectedTile = tilePalette[0];
     renderPalette();
     selectTile(selectedTile);
+    updateProperties();
+    render();
+  }
+
+  function resizeMap(newW, newH) {
+    if (!mapData) return;
+    const oldW = mapData.width;
+    const oldH = mapData.height;
+    if (newW < 2 || newW > 200 || newH < 2 || newH > 200) {
+      alert('Las dimensiones deben estar entre 2 y 200');
+      return;
+    }
+    if (newW === oldW && newH === oldH) return;
+
+    mapData.width = newW;
+    mapData.height = newH;
+
+    const layerNames = ['terreno', 'estructura', 'objetos', 'personajes', 'eventos'];
+    layerNames.forEach(layer => {
+      const grid = mapData.layers[layer];
+      if (!grid) return;
+      const newGrid = [];
+      for (let r = 0; r < newH; r++) {
+        if (r < oldH) {
+          const row = grid[r].slice(0, newW);
+          while (row.length < newW) row.push(0);
+          newGrid.push(row);
+        } else {
+          newGrid.push(Array(newW).fill(0));
+        }
+      }
+      mapData.layers[layer] = newGrid;
+    });
+
+    if (mapData.playerStart) {
+      mapData.playerStart.x = Math.min(mapData.playerStart.x, newW - 1);
+      mapData.playerStart.y = Math.min(mapData.playerStart.y, newH - 1);
+    }
+
+    if (mapData.exits) {
+      mapData.exits = mapData.exits.filter(e => e.tileX < newW && e.tileY < newH);
+    }
+    if (mapData.characters) {
+      mapData.characters = mapData.characters.filter(c => c.x < newW && c.y < newH);
+    }
+    if (mapData.enemies) {
+      mapData.enemies = mapData.enemies.filter(e => e.x < newW && e.y < newH);
+    }
+
     updateProperties();
     render();
   }
@@ -681,7 +806,7 @@
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const cellPx = zoom * ((mapData ? (mapData.tileSize || tileSize) : tileSize) / tileSize);
+    const cellPx = zoom * (mapData ? (mapData.tileSize || tileSize) : tileSize);
     return { col: Math.floor(x / cellPx), row: Math.floor(y / cellPx) };
   }
 
@@ -860,6 +985,21 @@
     } catch (err) {
       alert('Error de red al eliminar');
     }
+  });
+
+  document.getElementById('btnResize').addEventListener('click', () => {
+    if (!mapData) return;
+    showModal('Redimensionar Mapa',
+      '<div class="modal-field"><label>Ancho (tiles)</label><input type="number" id="fResizeW" value="' + mapData.width + '" min="2" max="200"></div>' +
+      '<div class="modal-field"><label>Alto (tiles)</label><input type="number" id="fResizeH" value="' + mapData.height + '" min="2" max="200"></div>' +
+      '<p class="muted" style="font-size:0.75rem">Si reduc\u00EDs el tama\u00F1o, los tiles fuera del nuevo l\u00EDmite se perder\u00E1n.</p>',
+      () => {
+        const w = parseInt(document.getElementById('fResizeW').value);
+        const h = parseInt(document.getElementById('fResizeH').value);
+        if (!w || !h || w < 2 || h < 2) { alert('Dimensiones inv\u00E1lidas'); return; }
+        resizeMap(w, h);
+      }
+    );
   });
 
   document.getElementById('btnAddExit').addEventListener('click', () => {
@@ -1125,7 +1265,7 @@
 
   async function init() {
     await Promise.all([
-      loadExternalPalette(),
+      loadAtlases(),
       loadDefaultMap(),
       loadMapList(),
     ]);

@@ -47,7 +47,11 @@ El sitio se divide en dos grandes vertientes:
 - [x] **Creador de Tiles**: Editor pixel-art en `/desarrollo/herramientas/creador-tiles` con pincel, goma, bote, gotero, línea, rectángulo, undo/redo, soporte multi-frame, capas por entidad, preview en vivo y guardado directo al servidor.
 - [x] **Cortador de Spritesheets**: Herramienta en `/desarrollo/herramientas/cortador-texturas` que permite seleccionar rectángulos de una imagen subida, nombrarlos y guardarlos como entidades con sprite real. Snap a grilla, preview, Guardar Todo.
 - [x] **Inspector de Mapas**: Editor visual de mapas con paleta de tiles del atlas (thumbnails con sprite real), pintado con sprites en vez de colores sólidos, persistencia via API REST. Disponible en `/desarrollo/herramientas/inspector-mapa`.
-- [x] **Herramientas**: 4 herramientas integradas (inspector-mapa, creador-tiles, cortador-texturas, visor-atlas) con estilos base compartidos via `devtools-base.css`. Endpoints API REST para persistencia de entidades y mapas.
+- [x] **Multi-atlas**: Migración a múltiples atlas por categoría (`atlas_mundo.png`, `atlas_entidades.png`, `atlas_ui.png`). `build-atlas.js` agrupa entidades por campo `atlas` y genera PNG+JSON por grupo. `sprite.js` con búsqueda cross-atlas y getters backward-compatibles.
+- [x] **Sistema de direcciones**: Entidades con `4dir` / `8dir` y layout en spritesheet (3/5 bloques de frames). Mirror automático (flip horizontal). `dirFrames` en atlas JSON.
+- [x] **TileW/TileH**: Entidades declaran tamaño en tiles. `frameW = tileW * tileSize`, `frameH = tileH * tileSize`. `halfBlock` renderiza a mitad de altura (raycaster y 2D). `raycaster.js` `_addBillboard` usa tileW/tileH. `renderer.js` usa frameW/frameH.
+- [x] **5 DevTools adaptadas a multi-atlas**: visor-atlas (canvas apilados, selector de atlas, detalle con dirFrames, dirección en preview), inspector-mapa (loadAtlases multi-grupo, selector de dirección en personajes), creador-tiles (campos tileW/tileH/directions/halfBlock guardados, spriteToBase64 multi-dir), cortador-texturas (campos tileW/tileH/directions/halfBlock en selecciones), editor-hud (loadAtlasInfo multi-grupo, atlas tags).
+- [x] **halfBlock en renderer 2D**: drawLayer y draw2D reducen altura a la mitad para player, characters y enemies.
 
 ## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.
