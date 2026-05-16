@@ -263,6 +263,19 @@
       <p><strong>Renderización halfBlock en 2D:</strong> <code>drawLayer</code> y <code>draw2D</code> (player, characters, enemies) ahora reducen la altura dibujada a la mitad cuando <code>info.halfBlock</code> es true, posicionando la parte visible sobre el tile.</p>
       <p><strong>Entidades actualizadas:</strong> <code>player</code> configurado con <code>tileH:2</code>, <code>directions:"4dir"</code>, <code>mirror:true</code>. Todas las entidades existentes tienen campo <code>atlas</code> asignado (<code>mundo</code> o <code>entidades</code>).</p>
     </article>
+    <article class="entry">
+      <h2>2026-05-17 — Documentación de Herramientas dividida en sub-páginas</h2>
+      <p><strong>División de <code>herramientas.md</code>:</strong> El documento monolítico de las 5 DevTools se dividió en páginas individuales con análisis completo de cada herramienta:</p>
+      <ul>
+        <li><strong><code>herramientas.md</code></strong> — convertido en índice con enlaces a cada herramienta + tabla de API REST compartida + arquitectura multi-atlas.</li>
+        <li><strong><code>inspector-mapa.md</code></strong> — 3 paneles, capas, herramientas de edición, exits, personajes/enemigos, API, multi-atlas.</li>
+        <li><strong><code>creador-tiles.md</code></strong> — herramientas de dibujo (6), paleta, propiedades de entidad, sistema de frames, capas por estado, undo/redo.</li>
+        <li><strong><code>cortador-texturas.md</code></strong> — carga de imagen, selecciones rectangulares, snap a grilla, propiedades por selección, preview, guardado individual/todo.</li>
+        <li><strong><code>visor-atlas.md</code></strong> — canvas multi-atlas apilado, lista de entidades con filtro, panel de detalle con preview animado, stats bar, selector de dirección.</li>
+        <li><strong><code>editor-hud.md</code></strong> — 6 tipos de elemento (barra, texto, minimapa, slot, imagen, mensajes), bindings de texto, canvas interactivo, persistencia.</li>
+      </ul>
+      <p><strong>Sub-navegación en docs:</strong> Se agregó un sub-nav secundario a <code>views/docs.html</code> para la sección Herramientas (Índice + 5 tools) con lógica JS de navegación sin recarga de página, siguiendo el mismo patrón que el sub-nav de GameCore.</p>
+    </article>
   </main>
 
   <footer>

@@ -66,7 +66,7 @@
       <a href="/docs">General</a>
       <a href="/docs/gamecore">GameCore</a>
       <a href="#" data-page="raycaster">Raycaster</a>
-      <a href="#" data-page="herramientas">Herramientas</a>
+      <a href="/docs/herramientas" data-page="herramientas">Herramientas</a>
     </nav>
     <nav class="docs-subnav" id="docsSubnav" style="display:none">
       <a href="#" data-md="/js/gamecore/docs/core.md">core.js</a>
@@ -77,6 +77,14 @@
       <a href="#" data-md="/js/gamecore/docs/raycaster.md">raycaster.js</a>
       <a href="#" data-md="/js/gamecore/docs/renderer.md">renderer.js</a>
       <a href="#" data-md="/js/gamecore/docs/sprite.md">sprite.js</a>
+    </nav>
+    <nav class="docs-subnav" id="herramientasSubnav" style="display:none">
+      <a href="#" data-md="/docs/herramientas.md">Índice</a>
+      <a href="#" data-md="/docs/inspector-mapa.md">Inspector de Mapas</a>
+      <a href="#" data-md="/docs/creador-tiles.md">Creador de Tiles</a>
+      <a href="#" data-md="/docs/cortador-texturas.md">Cortador de Texturas</a>
+      <a href="#" data-md="/docs/visor-atlas.md">Visor de Atlas</a>
+      <a href="#" data-md="/docs/editor-hud.md">Editor de HUD</a>
     </nav>
     <div id="docContainer" class="docs-content loading">Cargando documentación...</div>
   </main>
@@ -104,14 +112,31 @@
           const page = DOC_PAGES[a.dataset.page];
           if (!page) return;
           subnav.style.display = 'none';
+          herramientasSubnav.style.display = 'none';
           document.querySelectorAll('.docs-nav a').forEach(x => x.classList.remove('active'));
           a.classList.add('active');
+          if (a.dataset.page === 'herramientas') {
+            herramientasSubnav.style.display = 'flex';
+            setActiveHerramientasSubnav(page.file);
+          }
           loadMd(page.file, page.title);
         });
       });
 
       const subnav = document.getElementById('docsSubnav');
+      const herramientasSubnav = document.getElementById('herramientasSubnav');
       const container = document.getElementById('docContainer');
+
+      document.querySelectorAll('#herramientasSubnav a').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const mdFile = a.dataset.md;
+          setActiveHerramientasSubnav(mdFile);
+          let title = 'Herramientas — ' + a.textContent;
+          if (mdFile.endsWith('/docs/herramientas.md')) title = 'Herramientas de Desarrollo';
+          loadMd(mdFile, title);
+        });
+      });
 
       function loadMd(mdFile, title) {
         document.querySelector('h1').textContent = title;
@@ -137,8 +162,15 @@
         });
       }
 
+      function setActiveHerramientasSubnav(mdFile) {
+        document.querySelectorAll('#herramientasSubnav a').forEach(a => {
+          a.classList.toggle('active', a.dataset.md === mdFile);
+        });
+      }
+
       if (path === '/docs/gamecore') {
         subnav.style.display = 'flex';
+        herramientasSubnav.style.display = 'none';
         const defaultMd = '/js/gamecore/README.md';
         setActiveSubnav(defaultMd);
         loadMd(defaultMd, 'GameCore — Documentación del Motor');
@@ -153,8 +185,15 @@
             loadMd(mdFile, title);
           });
         });
+      } else if (path === '/docs/herramientas') {
+        herramientasSubnav.style.display = 'flex';
+        subnav.style.display = 'none';
+        const defaultMd = '/docs/herramientas.md';
+        setActiveHerramientasSubnav(defaultMd);
+        loadMd(defaultMd, 'Herramientas de Desarrollo');
       } else {
         subnav.style.display = 'none';
+        herramientasSubnav.style.display = 'none';
         loadMd('/README.md', 'Proyecto Tierra Media — Documentación General');
       }
 
