@@ -121,6 +121,16 @@
 
 #entityBadge { margin-left: auto; }
 
+.entity-item .e-del {
+  cursor: pointer;
+  color: #484f58;
+  font-size: 0.7rem;
+  padding: 0 0.2rem;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.entity-item .e-del:hover { color: #f85149; }
+
 .empty-state {
   position: absolute;
   inset: 0;

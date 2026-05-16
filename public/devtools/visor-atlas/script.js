@@ -130,8 +130,12 @@
         '<span class="e-name">' + (e.name || e.id) + '</span>' +
         '<span class="e-frames">' + e.frames + 'f</span>' +
         '<span class="e-atlas-tag">' + e.atlasName + '</span>' +
-        (e.hasSprite ? '<span class="e-badge" style="color:#3fb950">PNG</span>' : '<span class="e-badge">\u2014</span>');
-      item.addEventListener('click', () => selectEntity(e.id));
+        (e.hasSprite ? '<span class="e-badge" style="color:#3fb950">PNG</span>' : '<span class="e-badge">\u2014</span>') +
+        '<span class="e-del" data-id="' + e.id + '">\u2715</span>';
+      item.addEventListener('click', ev => {
+        if (ev.target.classList.contains('e-del')) return;
+        selectEntity(e.id);
+      });
       container.appendChild(item);
     });
   }
@@ -364,6 +368,7 @@
     document.getElementById('btnEditEntity').onclick = () => {
       window.location.href = '/desarrollo/herramientas/creador-tiles';
     };
+    document.getElementById('btnDeleteEntity').onclick = () => deleteEntity(id);
 
     const framesPerDir = meta.frames || e.frames;
     const previewFrames = dirKeys.length > 0 ? framesPerDir : e.frames;
@@ -567,6 +572,35 @@
       renderFrameStrip(e2, meta);
       drawAnimFrame(e2, null, s, 0);
     }
+  });
+
+  async function deleteEntity(id) {
+    const overlay = document.getElementById('modalOverlay');
+    document.getElementById('modalTitle').textContent = 'Eliminar entidad';
+    document.getElementById('modalBody').innerHTML = '<p>\u00BFEliminar <strong>' + id + '</strong>? Esta acci\u00F3n no se puede deshacer.</p>';
+    overlay.style.display = 'flex';
+    document.getElementById('modalCancel').onclick = () => { overlay.style.display = 'none'; };
+    document.getElementById('modalOk').onclick = async () => {
+      overlay.style.display = 'none';
+      try {
+        const res = await fetch('/api/entidades/' + id, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.ok) {
+          selectedId = null;
+          document.getElementById('noSelection').style.display = 'block';
+          document.getElementById('detailContent').style.display = 'none';
+          await Promise.all([loadAtlases(), loadEntityMeta()]);
+        }
+      } catch (err) {
+        document.getElementById('emptyState').innerHTML = '<p style="color:#f85149">Error al eliminar: ' + err.message + '</p>';
+      }
+    };
+  }
+
+  document.getElementById('entityList').addEventListener('click', ev => {
+    const del = ev.target.closest('.e-del');
+    if (!del) return;
+    deleteEntity(del.dataset.id);
   });
 
   async function init() {
