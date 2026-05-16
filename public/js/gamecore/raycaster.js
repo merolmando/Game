@@ -87,6 +87,8 @@ const Raycaster = {
         wallX,
         mapX,
         mapY,
+        stepX,
+        stepY,
       };
     }
   },

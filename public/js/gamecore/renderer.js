@@ -191,15 +191,20 @@ const Renderer = {
       const hasTileSprites = Map.current.tileSprites;
       const entityId = hasTileSprites ? Map.current.tileSprites[ray.tileType] : null;
       const sprite = entityId ? Sprite.getEntity(entityId) : null;
+      // Luz del tile adyacente a la cara visible de la pared
+      let lx = ray.mapX, ly = ray.mapY;
+      if (ray.side === 0) lx += ray.stepX === -1 ? -1 : 1;
+      else ly += ray.stepY === -1 ? -1 : 1;
+
       let light;
       if (ray.side === 0) {
-        const ly = Map.getLight(ray.mapX, ray.mapY - 1);
-        const hy = Map.getLight(ray.mapX, ray.mapY);
-        light = ly + (hy - ly) * ray.wallX;
+        const a = Map.getLight(lx, ray.mapY - 1);
+        const b = Map.getLight(lx, ray.mapY);
+        light = a + (b - a) * ray.wallX;
       } else {
-        const lx = Map.getLight(ray.mapX - 1, ray.mapY);
-        const hx = Map.getLight(ray.mapX, ray.mapY);
-        light = lx + (hx - lx) * ray.wallX;
+        const a = Map.getLight(ray.mapX - 1, ly);
+        const b = Map.getLight(ray.mapX, ly);
+        light = a + (b - a) * ray.wallX;
       }
 
       if (spriteAvailable && sprite) {
