@@ -26,7 +26,7 @@ const Player = {
   // Keys que el jugador ha recolectado (para puertas bloqueadas).
   keys: [],
   hasKey(keyId) { return this.keys.includes(keyId); },
-  COLLISION_RADIUS: 0.5,
+  COLLISION_RADIUS: 0.4,
   // Animación de bob (oscilación al caminar).
   bobPhase: 0,
   bobOffset: 0,
