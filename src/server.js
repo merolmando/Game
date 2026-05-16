@@ -310,6 +310,9 @@ function computeLightmap(mapData) {
       for (let x = 0; x < w; x++) {
         processed++;
         progressBar(label, processed, totalTiles);
+        // Las paredes no rebotan luz (bloquean propagación)
+        const grid = mapData.layers && mapData.layers.estructura;
+        if (grid && grid[y] && grid[y][x] > 0) continue;
         const src = lightmap[y][x];
         const intensity = (src.r + src.g + src.b) / 3;
         if (intensity < bounceThreshold) continue;
