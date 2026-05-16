@@ -40,8 +40,7 @@
     .docs-nav a.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
     .loading { text-align: center; padding: 3rem; color: #8b949e; font-size: 1.1rem; }
     .error-doc { text-align: center; padding: 3rem; color: #f85149; }
-    .docs-nav a.placeholder { color: #484f58; cursor: default; }
-    .docs-nav a.placeholder:hover { background: #21262d; color: #484f58; }
+
     .docs-subnav { margin: 0 0 1rem 1rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
     .docs-subnav a { display: inline-block; padding: 0.25rem 0.7rem; background: #161b22; border: 1px solid #21262d; border-radius: 4px; color: #8b949e; text-decoration: none; font-size: 0.8rem; }
     .docs-subnav a:hover { background: #21262d; color: #c9d1d9; }
@@ -66,8 +65,8 @@
     <nav class="docs-nav">
       <a href="/docs">General</a>
       <a href="/docs/gamecore">GameCore</a>
-      <a href="javascript:void(0)" class="placeholder">Raycaster</a>
-      <a href="javascript:void(0)" class="placeholder">Herramientas</a>
+      <a href="#" data-page="raycaster">Raycaster</a>
+      <a href="#" data-page="herramientas">Herramientas</a>
     </nav>
     <nav class="docs-subnav" id="docsSubnav" style="display:none">
       <a href="#" data-md="/js/gamecore/docs/core.md">core.js</a>
@@ -94,13 +93,20 @@
       document.querySelectorAll('.docs-nav a').forEach(a => {
         if (a.getAttribute('href') === path) a.classList.add('active');
       });
-      document.querySelectorAll('.docs-nav a.placeholder').forEach(a => {
+      const DOC_PAGES = {
+        raycaster:    { file: '/js/gamecore/docs/raycaster-detailed.md', title: 'Raycaster — Motor Pseudo-3D' },
+        herramientas: { file: '/docs/herramientas.md',                  title: 'Herramientas de Desarrollo' },
+      };
+
+      document.querySelectorAll('.docs-nav a[data-page]').forEach(a => {
         a.addEventListener('click', e => {
           e.preventDefault();
+          const page = DOC_PAGES[a.dataset.page];
+          if (!page) return;
           subnav.style.display = 'none';
-          document.querySelector('h1').textContent = a.textContent;
-          container.className = 'docs-content';
-          container.innerHTML = '<p style="text-align:center;padding:3rem;color:#8b949e">Documentación próximamente.</p>';
+          document.querySelectorAll('.docs-nav a').forEach(x => x.classList.remove('active'));
+          a.classList.add('active');
+          loadMd(page.file, page.title);
         });
       });
 
