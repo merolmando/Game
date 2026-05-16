@@ -191,7 +191,16 @@ const Renderer = {
       const hasTileSprites = Map.current.tileSprites;
       const entityId = hasTileSprites ? Map.current.tileSprites[ray.tileType] : null;
       const sprite = entityId ? Sprite.getEntity(entityId) : null;
-      const light = Map.getLight(ray.mapX, ray.mapY);
+      let light;
+      if (ray.side === 0) {
+        const ly = Map.getLight(ray.mapX, ray.mapY - 1);
+        const hy = Map.getLight(ray.mapX, ray.mapY);
+        light = ly + (hy - ly) * ray.wallX;
+      } else {
+        const lx = Map.getLight(ray.mapX - 1, ray.mapY);
+        const hx = Map.getLight(ray.mapX, ray.mapY);
+        light = lx + (hx - lx) * ray.wallX;
+      }
 
       if (spriteAvailable && sprite) {
         const texX = Math.floor(ray.wallX * sprite.frameW);
