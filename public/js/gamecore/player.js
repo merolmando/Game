@@ -46,12 +46,15 @@ const Player = {
   _circleBlocked(cx, cy) {
     if (!Map.current) return true;
     const r = this.COLLISION_RADIUS;
-    if (Map.checkCircleCollision(cx, cy, r)) return true;
+    const pInfo = Sprite.getEntity('player');
+    const tileH = pInfo ? (pInfo.tileH || 1) : 1;
+    const cyOff = cy - (tileH - 1) * 0.5;
+    if (Map.checkCircleCollision(cx, cyOff, r)) return true;
     const entities = [...(Map.current.characters || []), ...(Map.current.enemies || [])];
     const minDist2 = (r * 2) * (r * 2);
     for (const e of entities) {
       const dx = cx - e.x;
-      const dy = cy - e.y;
+      const dy = cyOff - e.y;
       if (dx * dx + dy * dy < minDist2) return true;
     }
     return false;
