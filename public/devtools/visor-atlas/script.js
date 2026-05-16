@@ -583,16 +583,18 @@
     document.getElementById('modalOk').onclick = async () => {
       overlay.style.display = 'none';
       try {
-        const res = await fetch('/api/entidades/' + id, { method: 'DELETE' });
+        const res = await fetch('/api/entidades/' + encodeURIComponent(id), { method: 'DELETE' });
         const data = await res.json();
-        if (data.ok) {
-          selectedId = null;
-          document.getElementById('noSelection').style.display = 'block';
-          document.getElementById('detailContent').style.display = 'none';
-          await Promise.all([loadAtlases(), loadEntityMeta()]);
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Error al eliminar (' + res.status + ')');
         }
+        selectedId = null;
+        document.getElementById('noSelection').style.display = 'block';
+        document.getElementById('detailContent').style.display = 'none';
+        await loadEntityMeta();
+        await loadAtlases();
       } catch (err) {
-        document.getElementById('emptyState').innerHTML = '<p style="color:#f85149">Error al eliminar: ' + err.message + '</p>';
+        document.getElementById('emptyState').innerHTML = '<p style="color:#f85149">Error: ' + err.message + '</p>';
       }
     };
   }
