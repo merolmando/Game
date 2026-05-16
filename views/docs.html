@@ -40,6 +40,12 @@
     .docs-nav a.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
     .loading { text-align: center; padding: 3rem; color: #8b949e; font-size: 1.1rem; }
     .error-doc { text-align: center; padding: 3rem; color: #f85149; }
+    .docs-nav a.placeholder { color: #484f58; cursor: default; }
+    .docs-nav a.placeholder:hover { background: #21262d; color: #484f58; }
+    .docs-subnav { margin: 0 0 1rem 1rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .docs-subnav a { display: inline-block; padding: 0.25rem 0.7rem; background: #161b22; border: 1px solid #21262d; border-radius: 4px; color: #8b949e; text-decoration: none; font-size: 0.8rem; }
+    .docs-subnav a:hover { background: #21262d; color: #c9d1d9; }
+    .docs-subnav a.active { background: #1f6feb22; border-color: #1f6feb; color: #58a6ff; }
   </style>
 </head>
 <body>
@@ -60,14 +66,18 @@
     <nav class="docs-nav">
       <a href="/docs">General</a>
       <a href="/docs/gamecore">GameCore</a>
-      <a href="/docs/gamecore/core">core.js</a>
-      <a href="/docs/gamecore/input">input.js</a>
-      <a href="/docs/gamecore/map">map.js</a>
-      <a href="/docs/gamecore/player">player.js</a>
-      <a href="/docs/gamecore/camera">camera.js</a>
-      <a href="/docs/gamecore/raycaster">raycaster.js</a>
-      <a href="/docs/gamecore/renderer">renderer.js</a>
-      <a href="/docs/gamecore/sprite">sprite.js</a>
+      <a href="javascript:void(0)" class="placeholder">Raycaster</a>
+      <a href="javascript:void(0)" class="placeholder">Herramientas</a>
+    </nav>
+    <nav class="docs-subnav" id="docsSubnav" style="display:none">
+      <a href="#" data-md="/js/gamecore/docs/core.md">core.js</a>
+      <a href="#" data-md="/js/gamecore/docs/input.md">input.js</a>
+      <a href="#" data-md="/js/gamecore/docs/map.md">map.js</a>
+      <a href="#" data-md="/js/gamecore/docs/player.md">player.js</a>
+      <a href="#" data-md="/js/gamecore/docs/camera.md">camera.js</a>
+      <a href="#" data-md="/js/gamecore/docs/raycaster.md">raycaster.js</a>
+      <a href="#" data-md="/js/gamecore/docs/renderer.md">renderer.js</a>
+      <a href="#" data-md="/js/gamecore/docs/sprite.md">sprite.js</a>
     </nav>
     <div id="docContainer" class="docs-content loading">Cargando documentación...</div>
   </main>
@@ -84,39 +94,63 @@
       document.querySelectorAll('.docs-nav a').forEach(a => {
         if (a.getAttribute('href') === path) a.classList.add('active');
       });
-      const DOC_PAGES = {
-        '/docs/gamecore':        { file: '/js/gamecore/README.md',        title: 'GameCore — Documentación del Motor' },
-        '/docs/gamecore/core':   { file: '/js/gamecore/docs/core.md',     title: 'GameCore — core.js' },
-        '/docs/gamecore/input':  { file: '/js/gamecore/docs/input.md',    title: 'GameCore — input.js' },
-        '/docs/gamecore/map':    { file: '/js/gamecore/docs/map.md',      title: 'GameCore — map.js' },
-        '/docs/gamecore/player': { file: '/js/gamecore/docs/player.md',   title: 'GameCore — player.js' },
-        '/docs/gamecore/camera': { file: '/js/gamecore/docs/camera.md',   title: 'GameCore — camera.js' },
-        '/docs/gamecore/raycaster': { file: '/js/gamecore/docs/raycaster.md', title: 'GameCore — raycaster.js' },
-        '/docs/gamecore/renderer':  { file: '/js/gamecore/docs/renderer.md',  title: 'GameCore — renderer.js' },
-        '/docs/gamecore/sprite':    { file: '/js/gamecore/docs/sprite.md',    title: 'GameCore — sprite.js' },
-      };
+      document.querySelectorAll('.docs-nav a.placeholder').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          subnav.style.display = 'none';
+          document.querySelector('h1').textContent = a.textContent;
+          container.className = 'docs-content';
+          container.innerHTML = '<p style="text-align:center;padding:3rem;color:#8b949e">Documentación próximamente.</p>';
+        });
+      });
 
-      const doc = DOC_PAGES[path] || { file: '/README.md', title: 'Proyecto Tierra Media — Documentación General' };
-      let mdFile = doc.file;
-      let title = doc.title;
-
-      document.querySelector('h1').textContent = title;
-
+      const subnav = document.getElementById('docsSubnav');
       const container = document.getElementById('docContainer');
 
-      fetch(mdFile)
-        .then(res => {
-          if (!res.ok) throw new Error('No se pudo cargar ' + mdFile);
-          return res.text();
-        })
-        .then(md => {
-          container.className = 'docs-content';
-          container.innerHTML = renderMarkdown(md);
-        })
-        .catch(err => {
-          container.className = 'error-doc';
-          container.innerHTML = '<h2>Error</h2><p>' + err.message + '</p>';
+      function loadMd(mdFile, title) {
+        document.querySelector('h1').textContent = title;
+        container.className = 'docs-content';
+        container.innerHTML = '<p class="loading">Cargando...</p>';
+        fetch(mdFile)
+          .then(res => {
+            if (!res.ok) throw new Error('No se pudo cargar ' + mdFile);
+            return res.text();
+          })
+          .then(md => {
+            container.innerHTML = renderMarkdown(md);
+          })
+          .catch(err => {
+            container.className = 'error-doc';
+            container.innerHTML = '<h2>Error</h2><p>' + err.message + '</p>';
+          });
+      }
+
+      function setActiveSubnav(mdFile) {
+        document.querySelectorAll('#docsSubnav a').forEach(a => {
+          a.classList.toggle('active', a.dataset.md === mdFile);
         });
+      }
+
+      if (path === '/docs/gamecore') {
+        subnav.style.display = 'flex';
+        const defaultMd = '/js/gamecore/README.md';
+        setActiveSubnav(defaultMd);
+        loadMd(defaultMd, 'GameCore — Documentación del Motor');
+
+        document.querySelectorAll('#docsSubnav a').forEach(a => {
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            const mdFile = a.dataset.md;
+            setActiveSubnav(mdFile);
+            let title = 'GameCore — ' + a.textContent;
+            if (mdFile.endsWith('README.md')) title = 'GameCore — Documentación del Motor';
+            loadMd(mdFile, title);
+          });
+        });
+      } else {
+        subnav.style.display = 'none';
+        loadMd('/README.md', 'Proyecto Tierra Media — Documentación General');
+      }
 
       function escapeHtml(text) {
         return text
