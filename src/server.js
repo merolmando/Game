@@ -154,17 +154,6 @@ function loadEntityData(entityId) {
   return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
 }
 
-function _isSolidTile(mapData, tileId) {
-  if (!tileId) return false;
-  const entityId = mapData.tileSprites && mapData.tileSprites[tileId];
-  if (entityId) {
-    const ed = loadEntityData(entityId);
-    if (ed && ed.solid) return true;
-  }
-  const info = mapData.tileColors && mapData.tileColors[tileId];
-  return info ? !!info.solid : true;
-}
-
 function hasLineOfSight(mapData, x1, y1, x2, y2) {
   const dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
   const sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
@@ -174,7 +163,7 @@ function hasLineOfSight(mapData, x1, y1, x2, y2) {
   while (cx !== x2 || cy !== y2) {
     if ((cx !== x1 || cy !== y1) && (cx !== x2 || cy !== y2)) {
       const grid = mapData.layers && mapData.layers.estructura;
-      if (grid && grid[cy] && grid[cy][cx] && _isSolidTile(mapData, grid[cy][cx])) {
+      if (grid && grid[cy] && grid[cy][cx]) {
         return false;
       }
     }
