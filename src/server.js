@@ -32,6 +32,14 @@ const ROUTES = {
   '/hitos/tareas': 'hitos.html',
   '/docs': 'docs.html',
   '/docs/gamecore': 'docs.html',
+  '/docs/gamecore/core': 'docs.html',
+  '/docs/gamecore/input': 'docs.html',
+  '/docs/gamecore/map': 'docs.html',
+  '/docs/gamecore/player': 'docs.html',
+  '/docs/gamecore/camera': 'docs.html',
+  '/docs/gamecore/raycaster': 'docs.html',
+  '/docs/gamecore/renderer': 'docs.html',
+  '/docs/gamecore/sprite': 'docs.html',
 };
 
 const ROOT_DIR = path.join(__dirname, '..');

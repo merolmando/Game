@@ -59,7 +59,15 @@
     <h1>Documentación</h1>
     <nav class="docs-nav">
       <a href="/docs">General</a>
-      <a href="/docs/gamecore">GameCore API</a>
+      <a href="/docs/gamecore">GameCore</a>
+      <a href="/docs/gamecore/core">core.js</a>
+      <a href="/docs/gamecore/input">input.js</a>
+      <a href="/docs/gamecore/map">map.js</a>
+      <a href="/docs/gamecore/player">player.js</a>
+      <a href="/docs/gamecore/camera">camera.js</a>
+      <a href="/docs/gamecore/raycaster">raycaster.js</a>
+      <a href="/docs/gamecore/renderer">renderer.js</a>
+      <a href="/docs/gamecore/sprite">sprite.js</a>
     </nav>
     <div id="docContainer" class="docs-content loading">Cargando documentación...</div>
   </main>
@@ -76,15 +84,21 @@
       document.querySelectorAll('.docs-nav a').forEach(a => {
         if (a.getAttribute('href') === path) a.classList.add('active');
       });
-      let mdFile, title;
+      const DOC_PAGES = {
+        '/docs/gamecore':        { file: '/js/gamecore/README.md',        title: 'GameCore — Documentación del Motor' },
+        '/docs/gamecore/core':   { file: '/js/gamecore/docs/core.md',     title: 'GameCore — core.js' },
+        '/docs/gamecore/input':  { file: '/js/gamecore/docs/input.md',    title: 'GameCore — input.js' },
+        '/docs/gamecore/map':    { file: '/js/gamecore/docs/map.md',      title: 'GameCore — map.js' },
+        '/docs/gamecore/player': { file: '/js/gamecore/docs/player.md',   title: 'GameCore — player.js' },
+        '/docs/gamecore/camera': { file: '/js/gamecore/docs/camera.md',   title: 'GameCore — camera.js' },
+        '/docs/gamecore/raycaster': { file: '/js/gamecore/docs/raycaster.md', title: 'GameCore — raycaster.js' },
+        '/docs/gamecore/renderer':  { file: '/js/gamecore/docs/renderer.md',  title: 'GameCore — renderer.js' },
+        '/docs/gamecore/sprite':    { file: '/js/gamecore/docs/sprite.md',    title: 'GameCore — sprite.js' },
+      };
 
-      if (path === '/docs/gamecore') {
-        mdFile = '/js/gamecore/README.md';
-        title = 'GameCore — Documentación del Motor';
-      } else {
-        mdFile = '/README.md';
-        title = 'Proyecto Tierra Media — Documentación General';
-      }
+      const doc = DOC_PAGES[path] || { file: '/README.md', title: 'Proyecto Tierra Media — Documentación General' };
+      let mdFile = doc.file;
+      let title = doc.title;
 
       document.querySelector('h1').textContent = title;
 
