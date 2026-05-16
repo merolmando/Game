@@ -193,8 +193,8 @@ const Renderer = {
       const sprite = entityId ? Sprite.getEntity(entityId) : null;
       // Luz del tile adyacente a la cara visible de la pared
       let lx = ray.mapX, ly = ray.mapY;
-      if (ray.side === 0) lx += ray.stepX === -1 ? -1 : 1;
-      else ly += ray.stepY === -1 ? -1 : 1;
+      if (ray.side === 0) lx += ray.stepX === -1 ? 1 : -1;
+      else ly += ray.stepY === -1 ? 1 : -1;
 
       let light;
       if (ray.side === 0) {

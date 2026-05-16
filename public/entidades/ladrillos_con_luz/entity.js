@@ -1,7 +1,7 @@
 {
   "type": "tile",
-  "name": "arbusto_pequeño",
-  "solid": false,
+  "name": "ladrillos_con_luz",
+  "solid": true,
   "frames": 1,
   "animSpeed": 0,
   "tileSize": 32,
@@ -9,9 +9,10 @@
   "tileH": 1,
   "directions": "none",
   "mirror": true,
-  "halfBlock": true,
-  "blockVision": false,
+  "halfBlock": false,
+  "blockVision": true,
   "halfSolid": false,
+  "emission": 1,
   "atlas": "entidades",
-  "defaultColor": "#888888"
+  "defaultColor": "#ffd700"
 }
