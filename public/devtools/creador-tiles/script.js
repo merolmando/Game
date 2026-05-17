@@ -543,7 +543,10 @@
       framesData.push(grid);
     }
     if (totalFrames !== prevTotal) {
-      initLayers();
+      // Preservar capas existentes, solo actualizar contador de frames
+      for (const name in layers) {
+        layers[name].frames = totalFrames;
+      }
     }
     syncFrameNav();
     render();
@@ -699,6 +702,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entityId, entityData, spriteBase64 }),
       });
+      if (!res.ok) {
+        setSaveStatus('\u274C Error del servidor (' + res.status + ')', '#f85149');
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         setSaveStatus('\u2705 Guardado: ' + entityId, '#3fb950');

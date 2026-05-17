@@ -116,11 +116,12 @@ async function generatePlaceholderSprite(entityData) {
 }
 
 async function extendSprite(filePath, targetW, targetH) {
-  const raw = await sharp(fs.readFileSync(filePath)).ensureAlpha().metadata();
+  const input = fs.readFileSync(filePath);
+  const raw = await sharp(input).ensureAlpha().metadata();
   if (raw.width === targetW && raw.height === targetH) {
-    return sharp(fs.readFileSync(filePath)).ensureAlpha().toBuffer();
+    return sharp(input).ensureAlpha().toBuffer();
   }
-  const pipeline = sharp(fs.readFileSync(filePath)).ensureAlpha();
+  const pipeline = sharp(input).ensureAlpha();
   if (raw.width < targetW || raw.height < targetH) {
     return pipeline.extend({
       top: 0, left: 0,
@@ -136,7 +137,12 @@ function loadEntityData(entityId) {
   const dirPath = path.join(ENTIDADES_DIR, entityId);
   const entityPath = path.join(dirPath, 'entity.js');
   if (!fs.existsSync(entityPath)) return null;
-  return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
+  } catch (e) {
+    console.error('Error parseando ' + entityPath + ': ' + e.message);
+    return null;
+  }
 }
 
 async function buildAtlasGroup(groupName, entities) {

@@ -222,7 +222,7 @@
       ctx.drawImage(sec.img, 0, 0, sec.w, sec.h,
         layout.pad * z, secY, sec.w * z, sec.h * z);
 
-      if (sec !== layout.sections[layout.sections.length - 1] || layout.sections.length === 1) {
+      if (sec !== layout.sections[layout.sections.length - 1]) {
         ctx.strokeStyle = 'rgba(48,54,61,0.5)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -481,7 +481,7 @@
     const e = entities.find(en => en.id === selectedId);
     const meta = entityMap[selectedId] || {};
     if (!e) return;
-    const frameCount = Object.keys(e.dirFrames || {}).length > 0 ? (meta.frames || 4) : e.frames;
+    const frameCount = Object.keys(e.dirFrames || {}).length > 0 ? (meta.frames != null ? meta.frames : 4) : e.frames;
     if (frameCount <= 1) return;
     animTimer += dt;
     const speed = e.animSpeed || 0.2;

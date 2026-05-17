@@ -609,14 +609,17 @@
     render();
   });
 
-  canvas.addEventListener('mouseleave', () => {
+  canvas.addEventListener('mouseleave', () => { cleanupDrag(); });
+  document.addEventListener('mouseup', () => { cleanupDrag(); });
+
+  function cleanupDrag() {
     if (isDragging) {
       isDragging = false;
       dragStart = null;
       dragCurrent = null;
-      render();
+      if (sourceImage) render();
     }
-  });
+  }
 
   canvas.addEventListener('contextmenu', e => {
     e.preventDefault();
