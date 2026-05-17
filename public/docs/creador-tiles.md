@@ -26,6 +26,7 @@ Panel de 3 columnas:
 - TileSize, TileW, TileH (permite sprites multi-tile como personajes de 1×2)
 - Direcciones: none, 4dir (up/right/down/left), 8dir (up/upRight/right/downRight/down/downLeft/left/upLeft)
 - Frames, AnimSpeed (velocidad de animación en segundos)
+- Color de emisión (`emissionColor`): color RGB que la entidad emitirá como luz en el lightmap (usar color picker o HEX)
 - Navegador de frames con anterior/siguiente, vista previa animada
 - Sistema de capas por entidad: cada capa (idle, walk, atk...) tiene sus propios frames y animSpeed
 - Vista previa en tamaño real (panel lateral)

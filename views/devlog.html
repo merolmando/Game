@@ -276,6 +276,18 @@
       </ul>
       <p><strong>Sub-navegación en docs:</strong> Se agregó un sub-nav secundario a <code>views/docs.html</code> para la sección Herramientas (Índice + 5 tools) con lógica JS de navegación sin recarga de página, siguiendo el mismo patrón que el sub-nav de GameCore.</p>
     </article>
+    <article class="entry">
+      <h2>2026-05-17 — Documentación del sistema de luz RGB multi-bounce</h2>
+      <p>Actualización de documentación para reflejar los cambios del sistema de iluminación:</p>
+      <ul>
+        <li><strong>gamecore/README.md</strong> — Añadidos <code>Map.getLight()</code>, campos <code>lightmap</code> y <code>lightBounces</code> al formato de mapas.</li>
+        <li><strong>gamecore/docs/map.md</strong> — Mismos cambios en la documentación dedicada de <code>map.js</code>.</li>
+        <li><strong>gamecore/docs/renderer.md</strong> — Documentado el uso de <code>globalCompositeOperation = 'multiply'</code> para aplicar luz RGB en drawWalls, drawLayer y drawFloor, más caché de luz por tile y reseteo de composite en 2D.</li>
+        <li><strong>docs/herramientas.md</strong> — Añadido endpoint <code>/api/mapas/{name}/recompute-lightmap</code> a la tabla de API REST.</li>
+        <li><strong>docs/visor-atlas.md</strong> — Añadida fila "Color de emisión" con swatch en la tabla de detalle de entidad.</li>
+        <li><strong>docs/creador-tiles.md</strong> — Añadida propiedad <code>emissionColor</code> al listado de propiedades.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

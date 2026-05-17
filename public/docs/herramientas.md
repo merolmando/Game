@@ -47,6 +47,7 @@ Editor visual de Heads-Up Displays con elementos como barra de HP, texto con bin
 | `/api/mapas` | GET | Listar mapas disponibles |
 | `/api/mapas` | POST | Guardar mapa |
 | `/api/mapas/{name}` | DELETE | Eliminar mapa |
+| `/api/mapas/{name}/recompute-lightmap` | POST | Regenerar lightmap del mapa (rebotes configurables vía `lightBounces`) |
 | `/api/mapas/default` | GET | Obtener mapa inicial |
 | `/api/mapas/default` | POST | Configurar mapa inicial |
 | `/api/hud` | GET | Listar configuraciones de HUD |

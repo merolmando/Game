@@ -55,6 +55,7 @@ Al seleccionar una entidad, el panel derecho muestra:
 | Direcciones | none/4dir/8dir con detalles |
 | Mirror / HalfBlock / BlockVision / HalfSolid | Sí/No |
 | Sprite real | Check verde si la entidad tiene imagen PNG, rojo si usa placeholder |
+| Color de emisión | Swatch del `emissionColor` si la entidad emite luz, gris `#888` si no tiene |
 | Capas | Listado si la entidad tiene layers (idle, walk, etc.) |
 | Editar | Botón para abrir en Creador de Tiles |
 

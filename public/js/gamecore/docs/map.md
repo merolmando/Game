@@ -21,6 +21,7 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 | `_tileInBounds(tx, ty)` | `tx, ty: number` — coordenadas enteras de tile | `boolean` | Verifica si un tile está dentro de los límites del mapa |
 | `_isTileSolid(id)` | `id: number` — ID numérico de tile | `boolean` | Helper: dado un ID de tile, consulta `entity.solid` del atlas si existe, fallback a `tileColors[id].solid`, default `true` |
 | `checkExits(px, py)` | `px, py: number` — posición del jugador | `object \| null` | Por distancia circular con radio 0.5: calcula el punto más cercano del tile de salida al centro del jugador. Si la distancia es < 0.5, activa la salida. No requiere estar centrado en el tile |
+| `getLight(tileId)` | `tileId: number` — ID de tile | `{r, g, b}` — canales 0-1 | Retorna el color de luz para un tile desde `lightmap[tileId]` (hex `#RRGGBB`). Clampa cada canal a [0, 1]. Backward compat con lightmap numérico legacy (un solo float → mismo valor en R, G, B). Si no hay lightmap, retorna `{r:1, g:1, b:1}` (full bright) |
 
 ## Estructura de `Map.current` (objeto cargado)
 
@@ -35,6 +36,8 @@ Carga mapas desde archivos JSON y expone consultas de tiles, colisiones y salida
 | `tileSprites` | `object` | `{ [id]: string }` — mapea ID de tile a entityId del atlas (`public/entidades/`) |
 | `tileColors` | `object` | `{ [id]: { color, name, solid } }` — configuración por ID (fallback si no hay sprite) |
 | `exits` | `object[]` | `[{ tileX, tileY, target, spawnX, spawnY }]` — transiciones a otros mapas |
+| `lightmap` | `object` | `{ [tileId]: "#RRGGBB" }` — color de luz por tile. Generado por el servidor al guardar el mapa |
+| `lightBounces` | `number` | `3` — cantidad de rebotes del lightmap (0-5). 0 = solo luz directa |
 | `tiles` | `number[][]` | (legacy) Grid 2D de tiles planos. Solo presente en mapas sin `layers` |
 
 ## Sistema de capas
