@@ -342,6 +342,16 @@
         <li><strong>Refactor <code>three-core.js</code>:</strong> <code>_fadeOut()</code> devuelve Promise para encadenar con <code>async/await</code>. HUD stats actualizados por frame.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-18 — Lightmap y materiales emisivos en vóxeles</h2>
+      <ul>
+        <li><strong>Lightmap:</strong> El color de cada vértice se multiplica por el lightmap del tile <code>(lightmap[z][x])</code>, dando iluminación precalculada (ambient occlusion, bounce light) visible en tiempo real sin luces de Three.js.</li>
+        <li><strong>Emission:</strong> Entidades con <code>emission &gt; 0</code> (como <code>ladrillos_con_luz</code>: 0.5, #d4ff00) suman su color emisivo al vértice, haciendo que esos tiles parezcan auto-iluminados.</li>
+        <li><strong>Entity cache:</strong> <code>_ensureEntityCache()</code> carga <code>atlas_mundo.json</code> y <code>atlas_entidades.json</code> al construir chunks, para acceder a <code>emission</code> y <code>emissionColor</code> de cada entidad sin depender de <code>Sprite</code>.</li>
+        <li><strong>LOD1 y LOD2:</strong> LOD1 promedia el lightmap de los 4 tiles en un bloque merged. LOD2 promedia el color base × lightmap de todos los tiles del chunk.</li>
+        <li><strong>Fix:</strong> <code>buildFromMap</code> ahora es <code>async</code>. Todos los callers actualizados con <code>await</code>.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

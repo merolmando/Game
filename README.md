@@ -57,6 +57,7 @@ El sitio se divide en dos grandes vertientes:
 - [x] **Frustum Culling**: Solo se renderizan los chunks dentro del cono de visión de la cámara.
 - [x] **LOD 3 niveles por chunk**: LOD0 (detalle completo, merged voxels), LOD1 (merge 2×2 del mismo tileId en cajas más grandes, fallback a 1×1 para bloques no uniformes), LOD2 (caja única con color promedio del chunk). Selección por distancia: 0–15, 15–30, 30+.
 - [x] **Sprites Billboard (Three.js)**: Extracción de sprites del atlas a `THREE.Sprite` con texturas recortadas a `CanvasTexture`. Soporte para capas `objetos`, `characters`, `enemies`, `exits`. Animación multi-frame (`animSpeed`). `halfBlock` para sprites de media altura (arbustos).
+- [x] **Lightmap + Emission**: Vóxeles coloreados con el lightmap precalculado del mapa (multiplicación RGB por tile). Entidades emisivas (`ladrillos_con_luz`) suman su `emissionColor * intensity` al color del vértice. Datos cargados desde `atlas_{mundo,entidades}.json` vía entity cache.
 - [x] **Fade transitions + HUD**: Transición fade in/out al cambiar de mapa (CSS overlay 300ms). HUD HTML con barras de HP/MP, nivel, crosshair, indicador de proximidad a exits. Nombre del mapa al entrar.
 
 ## 📅 Próximos Hitos

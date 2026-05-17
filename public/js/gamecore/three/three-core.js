@@ -21,7 +21,7 @@ const Game3D = {
     await GameMap.load(startMap);
     Player.x = GameMap.current.playerStart.x;
     Player.y = GameMap.current.playerStart.y;
-    ChunkManager.buildFromMap(GameMap.current);
+    await ChunkManager.buildFromMap(GameMap.current);
     await SpriteManager.build(GameMap.current);
     this._showMapName(GameMap.current.name || '');
     this.lastTime = performance.now();
@@ -96,7 +96,7 @@ const Game3D = {
         }).then(async () => {
           Player.x = exit.spawnX || GameMap.current.playerStart.x;
           Player.y = exit.spawnY || GameMap.current.playerStart.y;
-          ChunkManager.buildFromMap(GameMap.current);
+          await ChunkManager.buildFromMap(GameMap.current);
           await SpriteManager.build(GameMap.current);
           this._showMapName(GameMap.current.name || '');
           this._fadeIn();
