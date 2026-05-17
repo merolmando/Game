@@ -48,17 +48,21 @@ const Game3D = {
     SpriteManager.update(dt);
     Scene3D.render();
 
-    document.getElementById('hud-fps').textContent = 'FPS: ' + this.fps;
-    document.getElementById('hud-pos').textContent =
-      'Pos: ' + Player.x.toFixed(2) + ', ' + Player.y.toFixed(2);
+    try {
+      document.getElementById('hud-fps').textContent = 'FPS: ' + this.fps;
+      document.getElementById('hud-pos').textContent =
+        'Pos: ' + Player.x.toFixed(2) + ', ' + Player.y.toFixed(2);
 
-    const hpPct = (Player.hp / Player.maxHp * 100).toFixed(1);
-    const mpPct = (Player.mp / Player.maxMp * 100).toFixed(1);
-    document.getElementById('hp-fill').style.width = hpPct + '%';
-    document.getElementById('mp-fill').style.width = mpPct + '%';
-    document.getElementById('hp-text').textContent = Player.hp + '/' + Player.maxHp;
-    document.getElementById('mp-text').textContent = Player.mp + '/' + Player.maxMp;
-    document.getElementById('hud-level').textContent = 'Nivel ' + Player.level;
+      const hpPct = (Player.hp / Player.maxHp * 100).toFixed(1);
+      const mpPct = (Player.mp / Player.maxMp * 100).toFixed(1);
+      document.getElementById('hp-fill').style.width = hpPct + '%';
+      document.getElementById('mp-fill').style.width = mpPct + '%';
+      document.getElementById('hp-text').textContent = Player.hp + '/' + Player.maxHp;
+      document.getElementById('mp-text').textContent = Player.mp + '/' + Player.maxMp;
+      document.getElementById('hud-level').textContent = 'Nivel ' + Player.level;
+    } catch (e) {
+      if (!this._hudWarned) { console.warn('HUD error:', e); this._hudWarned = true; }
+    }
 
     requestAnimationFrame((t) => this._loop(t));
   },

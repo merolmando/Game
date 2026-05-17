@@ -38,11 +38,16 @@ const ChunkManager = {
   },
 
   _buildChunk(cx, cz, mapData) {
-    return [
-      this._buildLOD0(cx, cz, mapData),
-      this._buildLOD1(cx, cz, mapData),
-      this._buildLOD2(cx, cz, mapData),
-    ];
+    try {
+      return [
+        this._buildLOD0(cx, cz, mapData),
+        this._buildLOD1(cx, cz, mapData),
+        this._buildLOD2(cx, cz, mapData),
+      ];
+    } catch (e) {
+      console.warn('Error building chunk', cx, cz, e);
+      return [null, null, null];
+    }
   },
 
   _buildLOD0(cx, cz, mapData) {
@@ -149,7 +154,13 @@ const ChunkManager = {
         if (dy === 0) {
           if (blockExists(grid, nx, nz)) continue;
         } else {
-          if (solid(nx, ny, nz)) continue;
+          let allSolid = true;
+          for (let tz = 0; tz < 2 && allSolid; tz++) {
+            for (let tx = 0; tx < 2 && allSolid; tx++) {
+              if (!solid(bx + tx, ny, bz + tz)) allSolid = false;
+            }
+          }
+          if (allSolid) continue;
         }
         for (const v of fd.v) {
           pos.push(bx + v[0] * 2, wy + v[1], bz + v[2] * 2);
