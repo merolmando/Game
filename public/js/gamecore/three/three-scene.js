@@ -63,6 +63,7 @@ const Scene3D = {
     this.camera.position.set(Player.x, 0.5, Player.y);
     this.camera.rotation.y = this.yaw;
     this.camera.rotation.x = this.pitch;
+    this.camera.updateMatrixWorld(true);
   },
 
   getForward() {

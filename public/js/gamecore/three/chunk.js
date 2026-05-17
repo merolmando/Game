@@ -380,7 +380,7 @@ const ChunkManager = {
       if (!bb) continue;
       box.copy(bb).applyMatrix4(activeMesh.matrixWorld);
       const v = frustum.intersectsBox(box);
-      activeMesh.visible = activeMesh.visible && v;
+      activeMesh.visible = v;
     }
   },
 
