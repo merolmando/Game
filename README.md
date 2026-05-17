@@ -55,6 +55,7 @@ El sitio se divide en dos grandes vertientes:
 - [x] **Motor 3D (Three.js)**: Nueva ruta `/juego3d` con escena WebGL, PointerLock, mouse look (yaw+pitch), WASD con colisión reusada.
 - [x] **Sistema de Chunks 8×8**: División del mapa en chunks de 8×8 tiles. Cada chunk genera un BufferGeometry con vóxeles (terreno en y=-1, estructura en y=0). Vertex colors desde `tileColors`. Culling de caras ocultas entre vóxeles adyacentes.
 - [x] **Frustum Culling**: Solo se renderizan los chunks dentro del cono de visión de la cámara.
+- [x] **Sprites Billboard (Three.js)**: Extracción de sprites del atlas a `THREE.Sprite` con texturas recortadas a `CanvasTexture`. Soporte para capas `objetos`, `characters`, `enemies`, `exits`. Animación multi-frame (`animSpeed`). `halfBlock` para sprites de media altura (arbustos).
 
 ## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.

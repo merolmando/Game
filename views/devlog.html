@@ -310,6 +310,18 @@
       </ul>
       <p><strong>Próximo:</strong> Fase 3 con sprites billboard del atlas (árboles, objetos, NPCs, enemigos).</p>
     </article>
+    <article class="entry">
+      <h2>2026-05-18 — Fase 3: Sprites billboard desde el atlas</h2>
+      <ul>
+        <li><code>three-sprites.js</code>: SpriteManager que extrae frames del atlas PNG a <code>THREE.CanvasTexture</code> y crea billboards con <code>THREE.Sprite</code>.</li>
+        <li>Soporte para las 4 capas del mapa: <code>objetos</code> (grilla 2D via tileSprites), <code>characters</code>, <code>enemies</code> y <code>exits</code> (arrays con entityId).</li>
+        <li>Animación multi-frame: pre-extrae todas las texturas y cicla según <code>animSpeed</code> (ej: puerta con 2 frames a 0.5s).</li>
+        <li><code>halfBlock</code>: recorta la textura a la mitad superior para sprites bajos (arbustos).</li>
+        <li>Mirror horizontal: flip del canvas cuando el frame tiene <code>mirror: true</code>.</li>
+        <li>Integración con <code>three-core.js</code>: carga tras el mapa, rebuild en transiciones, <code>update(dt)</code> por frame.</li>
+        <li>Mapa <code>nuevo_mapa.json</code>: 5 arbustos de prueba en posiciones visibles desde el spawn.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

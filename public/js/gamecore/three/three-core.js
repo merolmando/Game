@@ -20,6 +20,7 @@ const Game3D = {
     Player.x = GameMap.current.playerStart.x;
     Player.y = GameMap.current.playerStart.y;
     ChunkManager.buildFromMap(GameMap.current);
+    await SpriteManager.build(GameMap.current);
     this.lastTime = performance.now();
     requestAnimationFrame((t) => this._loop(t));
   },
@@ -39,6 +40,7 @@ const Game3D = {
     this._update(dt);
     Scene3D.updateCamera();
     ChunkManager.update(Scene3D.camera);
+    SpriteManager.update(dt);
     Scene3D.render();
 
     document.getElementById('hud-fps').textContent = 'FPS: ' + this.fps;
@@ -72,9 +74,11 @@ const Game3D = {
     const exit = GameMap.checkExits(Player.x, Player.y);
     if (exit) {
       if (exit.target) {
-        GameMap.load(exit.target).then(() => {
+        GameMap.load(exit.target).then(async () => {
           Player.x = exit.spawnX || GameMap.current.playerStart.x;
           Player.y = exit.spawnY || GameMap.current.playerStart.y;
+          ChunkManager.buildFromMap(GameMap.current);
+          await SpriteManager.build(GameMap.current);
         });
       }
     }
