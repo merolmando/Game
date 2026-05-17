@@ -73,7 +73,16 @@ function sendJson(res, status, data) {
 function parseJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => { body += chunk; });
+    let size = 0;
+    const MAX_BODY = 1024 * 1024; // 1MB
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_BODY) {
+        req.destroy();
+        reject(new Error('Body demasiado grande (máx 1MB)'));
+      }
+      body += chunk;
+    });
     req.on('end', () => {
       try {
         resolve(JSON.parse(body));
@@ -83,6 +92,11 @@ function parseJsonBody(req) {
     });
     req.on('error', reject);
   });
+}
+
+// Solo permite IDs alfanuméricos con guiones y guiones bajos
+function isValidId(id) {
+  return typeof id === 'string' && id.length > 0 && id.length <= 100 && /^[\w-]+$/.test(id);
 }
 
 function listEntities() {
@@ -110,7 +124,10 @@ function listEntities() {
 }
 
 function saveEntity(entityId, entityData, spriteBase64) {
+  if (!isValidId(entityId)) throw new Error('entityId inválido');
   const dir = path.join(ENTIDADES_DIR, entityId);
+  // Verificar que el path resuelve dentro de ENTIDADES_DIR
+  if (!path.resolve(dir).startsWith(path.resolve(ENTIDADES_DIR))) throw new Error('entityId inválido');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   fs.writeFileSync(path.join(dir, 'entity.js'), JSON.stringify(entityData, null, 2));
@@ -122,7 +139,9 @@ function saveEntity(entityId, entityData, spriteBase64) {
 }
 
 function deleteEntity(entityId) {
+  if (!isValidId(entityId)) throw new Error('entityId inválido');
   const dir = path.join(ENTIDADES_DIR, entityId);
+  if (!path.resolve(dir).startsWith(path.resolve(ENTIDADES_DIR))) throw new Error('entityId inválido');
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -173,7 +192,9 @@ function listMaps() {
 }
 
 function loadEntityData(entityId) {
+  if (!isValidId(entityId)) return null;
   const entityPath = path.join(ENTIDADES_DIR, entityId, 'entity.js');
+  if (!path.resolve(entityPath).startsWith(path.resolve(ENTIDADES_DIR))) return null;
   if (!fs.existsSync(entityPath)) return null;
   return JSON.parse(fs.readFileSync(entityPath, 'utf8'));
 }
@@ -404,13 +425,15 @@ const server = http.createServer((req, res) => {
 
   if (method === 'DELETE' && url.startsWith('/api/entidades/')) {
     const entityId = url.replace('/api/entidades/', '');
-    if (!entityId) return sendJson(res, 400, { error: 'entityId requerido' });
+    if (!entityId || !isValidId(entityId)) return sendJson(res, 400, { error: 'entityId inválido' });
     if (!fs.existsSync(path.join(ENTIDADES_DIR, entityId))) {
       return sendJson(res, 404, { error: 'Entidad no encontrada' });
     }
     deleteEntity(entityId);
     buildAtlas().then(() => {
       sendJson(res, 200, { ok: true, entityId });
+    }).catch(err => {
+      sendJson(res, 500, { error: err.message });
     });
     return;
   }
@@ -470,9 +493,10 @@ const server = http.createServer((req, res) => {
 
   if (method === 'POST' && url.startsWith('/api/mapas/') && url.endsWith('/recompute-lightmap')) {
     const mapName = url.replace('/api/mapas/', '').replace('/recompute-lightmap', '');
-    if (!mapName) return sendJson(res, 400, { error: 'name requerido' });
+    if (!mapName || !isValidId(mapName)) return sendJson(res, 400, { error: 'name inválido' });
     try {
       const filePath = path.join(MAPS_DIR, mapName + '.json');
+      if (!path.resolve(filePath).startsWith(path.resolve(MAPS_DIR))) return sendJson(res, 400, { error: 'name inválido' });
       if (!fs.existsSync(filePath)) return sendJson(res, 404, { error: 'Mapa no encontrado' });
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       const hasEmitters = hasEmissiveTiles(data);
@@ -492,8 +516,9 @@ const server = http.createServer((req, res) => {
 
   if (method === 'DELETE' && url.startsWith('/api/mapas/')) {
     const mapName = url.replace('/api/mapas/', '');
-    if (!mapName) return sendJson(res, 400, { error: 'name requerido' });
+    if (!mapName || !isValidId(mapName)) return sendJson(res, 400, { error: 'name inválido' });
     const filePath = path.join(MAPS_DIR, mapName + '.json');
+    if (!path.resolve(filePath).startsWith(path.resolve(MAPS_DIR))) return sendJson(res, 400, { error: 'name inválido' });
     if (!fs.existsSync(filePath)) {
       return sendJson(res, 404, { error: 'Mapa no encontrado' });
     }
@@ -532,7 +557,9 @@ const server = http.createServer((req, res) => {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const name = parsedUrl.searchParams.get('name');
     if (name) {
+      if (!isValidId(name)) return sendJson(res, 400, { error: 'name inválido' });
       const filePath = path.join(HUD_DIR, name + '.json');
+      if (!path.resolve(filePath).startsWith(path.resolve(HUD_DIR))) return sendJson(res, 400, { error: 'name inválido' });
       if (fs.existsSync(filePath)) {
         try {
           const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -552,6 +579,7 @@ const server = http.createServer((req, res) => {
     return parseJsonBody(req).then(body => {
       const { name, data } = body;
       if (!name || !data) return sendJson(res, 400, { error: 'name y data son requeridos' });
+      if (!isValidId(name)) return sendJson(res, 400, { error: 'name inválido' });
       if (!fs.existsSync(HUD_DIR)) fs.mkdirSync(HUD_DIR, { recursive: true });
       fs.writeFileSync(path.join(HUD_DIR, name + '.json'), JSON.stringify(data, null, 2));
       sendJson(res, 200, { ok: true, name });
@@ -560,8 +588,9 @@ const server = http.createServer((req, res) => {
 
   if (method === 'DELETE' && url.startsWith('/api/hud/')) {
     const hudName = url.replace('/api/hud/', '');
-    if (!hudName) return sendJson(res, 400, { error: 'name requerido' });
+    if (!hudName || !isValidId(hudName)) return sendJson(res, 400, { error: 'name inválido' });
     const filePath = path.join(HUD_DIR, hudName + '.json');
+    if (!path.resolve(filePath).startsWith(path.resolve(HUD_DIR))) return sendJson(res, 400, { error: 'name inválido' });
     if (!fs.existsSync(filePath)) return sendJson(res, 404, { error: 'HUD no encontrado' });
     try {
       fs.rmSync(filePath);
@@ -586,7 +615,11 @@ const server = http.createServer((req, res) => {
     return serveFile(res, TOOL_ROUTES[url], 'text/html');
   }
 
-  const filePath = path.join(PUBLIC_DIR, url);
+  const filePath = path.resolve(path.join(PUBLIC_DIR, url));
+  if (!filePath.startsWith(path.resolve(PUBLIC_DIR))) {
+    res.writeHead(403, { 'Content-Type': 'text/html' });
+    return res.end('<h1>403 - Acceso denegado</h1>');
+  }
   const ext = path.extname(filePath);
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
