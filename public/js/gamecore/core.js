@@ -60,7 +60,7 @@ async function resolveExitTarget(exit) {
       const res = await fetch('/api/mapas/resolve-label?label=' + encodeURIComponent(exit.connectionId));
       const data = await res.json();
       if (data.found) {
-        const target = '/maps/' + data.fileId + '.json';
+        const target = '/maps/' + encodeURIComponent(data.fileId) + '.json';
         const spawnData = { spawnX: data.tileX + 0.5, spawnY: data.tileY + 0.5 };
         return { target, spawnData };
       }

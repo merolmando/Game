@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { build: buildAtlas } = require('../tools/build-atlas');
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const VIEWS_DIR = path.join(__dirname, '../views');
 const ENTIDADES_DIR = path.join(PUBLIC_DIR, 'entidades');
@@ -48,25 +48,37 @@ const TOOL_ROUTES = {
   '/desarrollo/herramientas/editor-hud': path.join(PUBLIC_DIR, 'devtools/editor-hud/index.html'),
 };
 
+function headers(contentType) {
+  return { 'Content-Type': contentType, ...securityHeaders() };
+}
+
 function serveFile(res, filePath, contentType) {
   fs.readFile(filePath, (err, content) => {
     if (err) {
       if (err.code === 'ENOENT') {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.writeHead(404, headers('text/html'));
         res.end('<h1>404 - Página no encontrada</h1><a href="/">Volver al inicio</a>');
       } else {
-        res.writeHead(500, { 'Content-Type': 'text/html' });
+        res.writeHead(500, headers('text/html'));
         res.end(`<h1>Error del servidor: ${err.code}</h1>`);
       }
     } else {
-      res.writeHead(200, { 'Content-Type': contentType });
+      res.writeHead(200, headers(contentType));
       res.end(content, 'utf-8');
     }
   });
 }
 
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'same-origin',
+  };
+}
+
 function sendJson(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...securityHeaders() });
   res.end(JSON.stringify(data));
 }
 

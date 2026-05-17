@@ -132,7 +132,10 @@ const Map = {
     if (iy < 0 || iy >= this.current.lightmap.length) return { r: 0.5, g: 0.5, b: 0.5 };
     if (ix < 0 || ix >= this.current.lightmap[iy].length) return { r: 0.5, g: 0.5, b: 0.5 };
     const hex = this.current.lightmap[iy][ix];
-    if (typeof hex === 'number') return { r: hex, g: hex, b: hex };
+    if (typeof hex === 'number') {
+      const v = Math.max(0, Math.min(1, hex));
+      return { r: v, g: v, b: v };
+    }
     if (typeof hex === 'string') {
       return {
         r: parseInt(hex.slice(1, 3), 16) / 255,
