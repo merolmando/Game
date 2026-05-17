@@ -332,6 +332,16 @@
         <li>Refactor de <code>chunk.js</code>: cada chunk almacena <code>meshes: [lod0, lod1, lod2]</code> en vez de una sola mesh. <code>clear()</code> y <code>update()</code> actualizados para manejar múltiples meshes.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-18 — Fase 5: Fade transitions, HUD overlay y pulido</h2>
+      <ul>
+        <li><strong>Fade transition:</strong> Overlay CSS <code>#fadeOverlay</code> con transición de opacidad 300ms. Al activar un exit, fade out → carga de mapa y rebuild de chunks/sprites → fade in. Input bloqueado durante la transición (<code>_fading</code> flag).</li>
+        <li><strong>HUD HTML:</strong> Barras de HP (rojo) y MP (azul) con fill animado. Nivel del jugador. Crosshair (<code>+</code>) centrado. FPS y posición en pantalla (monospace).</li>
+        <li><strong>Exit proximity:</strong> Indicador "Salir: {label}" aparece al estar a &lt; 2 tiles de un exit, se oculta al alejarse.</li>
+        <li><strong>Nombre del mapa:</strong> Se muestra centrado al cargar un mapa nuevo, fade out a los 2s.</li>
+        <li><strong>Refactor <code>three-core.js</code>:</strong> <code>_fadeOut()</code> devuelve Promise para encadenar con <code>async/await</code>. HUD stats actualizados por frame.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>

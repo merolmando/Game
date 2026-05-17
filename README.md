@@ -57,10 +57,11 @@ El sitio se divide en dos grandes vertientes:
 - [x] **Frustum Culling**: Solo se renderizan los chunks dentro del cono de visión de la cámara.
 - [x] **LOD 3 niveles por chunk**: LOD0 (detalle completo, merged voxels), LOD1 (merge 2×2 del mismo tileId en cajas más grandes, fallback a 1×1 para bloques no uniformes), LOD2 (caja única con color promedio del chunk). Selección por distancia: 0–15, 15–30, 30+.
 - [x] **Sprites Billboard (Three.js)**: Extracción de sprites del atlas a `THREE.Sprite` con texturas recortadas a `CanvasTexture`. Soporte para capas `objetos`, `characters`, `enemies`, `exits`. Animación multi-frame (`animSpeed`). `halfBlock` para sprites de media altura (arbustos).
+- [x] **Fade transitions + HUD**: Transición fade in/out al cambiar de mapa (CSS overlay 300ms). HUD HTML con barras de HP/MP, nivel, crosshair, indicador de proximidad a exits. Nombre del mapa al entrar.
 
 ## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.
 - [ ] **Hito 3: Atributos**: Sistema de estadísticas (HP, MP, STR, INT) e inventario.
 - [x] **Fase 3 (Three.js)**: Sprites billboard del atlas para árboles, objetos, NPCs y enemigos.
 - [x] **Fase 4 (Three.js)**: LOD 3 niveles por chunk (detalle → merge 2×2 → caja única).
-- [ ] **Fase 5 (Three.js)**: Exits con fade, HUD overlay, pulido final.
+- [x] **Fase 5 (Three.js)**: Exits con fade, HUD overlay, pulido final.
