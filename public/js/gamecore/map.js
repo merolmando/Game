@@ -1,3 +1,5 @@
+const _lightmapChecked = new Set();
+
 const Map = {
   current: null,
   message: '',
@@ -9,18 +11,21 @@ const Map = {
     const data = await res.json();
     migrateMapData(data);
     this.current = data;
-    // Si tiene tileSprites pero no lightmap, pedir generación
+    // Si tiene tileSprites pero no lightmap, pedir generación (solo una vez)
     if (data.tileSprites && !data.lightmap) {
       const name = path.split('/').pop().replace('.json', '');
-      try {
-        const r2 = await fetch('/api/mapas/' + encodeURIComponent(name) + '/recompute-lightmap', { method: 'POST' });
-        const result = await r2.json();
-        if (result.generated) {
-          const res3 = await fetch(path);
-          if (res3.ok) this.current = await res3.json();
+      if (!_lightmapChecked.has(name)) {
+        _lightmapChecked.add(name);
+        try {
+          const r2 = await fetch('/api/mapas/' + encodeURIComponent(name) + '/recompute-lightmap', { method: 'POST' });
+          const result = await r2.json();
+          if (result.generated) {
+            const res3 = await fetch(path);
+            if (res3.ok) this.current = await res3.json();
+          }
+        } catch (e) {
+          console.warn('No se pudo generar lightmap:', e);
         }
-      } catch (e) {
-        console.warn('No se pudo generar lightmap:', e);
       }
     }
     return this.current;
