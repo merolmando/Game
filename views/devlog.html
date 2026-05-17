@@ -322,6 +322,16 @@
         <li>Mapa <code>nuevo_mapa.json</code>: 5 arbustos de prueba en posiciones visibles desde el spawn.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-18 — Fase 4: LOD 3 niveles por chunk</h2>
+      <ul>
+        <li>LOD0: malla completa con merged voxels 1×1 (detalle original, dist &lt; 15).</li>
+        <li>LOD1: merge automático de bloques 2×2 con mismo tileId en cajas más grandes (dist 15–30). Fallback a 1×1 para bloques no uniformes. Face culling a nivel de bloque.</li>
+        <li>LOD2: caja única por chunk con color promedio de todos los vóxeles del chunk (BoxGeometry, dist ≥ 30). Altura cubre terreno + estructura si existen ambas.</li>
+        <li>Selección por distancia jugador→centro del chunk. Transición suave: solo 1 mesh visible por chunk por frame.</li>
+        <li>Refactor de <code>chunk.js</code>: cada chunk almacena <code>meshes: [lod0, lod1, lod2]</code> en vez de una sola mesh. <code>clear()</code> y <code>update()</code> actualizados para manejar múltiples meshes.</li>
+      </ul>
+    </article>
   </main>
 
   <footer>
