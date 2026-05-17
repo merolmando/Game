@@ -148,6 +148,8 @@ footer {
   width: 100%;
   max-width: 800px;
   aspect-ratio: 4 / 3;
+  image-rendering: pixelated;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .entry {

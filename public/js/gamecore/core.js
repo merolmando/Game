@@ -11,6 +11,7 @@ const Transition = {
     this.timer = 0;
     this.halfDuration = duration / 2;
     this.loaded = false;
+    this._hangTimer = 0;
   },
 
   update(dt) {
@@ -18,7 +19,12 @@ const Transition = {
     this.timer += dt;
 
     if (this.phase === 'fadeOut' && this.timer >= this.halfDuration) {
-      if (!this.loaded) return;
+      if (!this.loaded) {
+        this._hangTimer += dt;
+        // Timeout de seguridad: si no carga en 5s, fuerza seguir
+        if (this._hangTimer < 5) return;
+        this.loaded = true;
+      }
       this.phase = 'fadeIn';
       this.timer = 0;
     } else if (this.phase === 'fadeIn' && this.timer >= this.halfDuration) {
@@ -140,9 +146,13 @@ async function gameLoop(timestamp) {
     Map.messageTimer -= dt;
     if (Map.messageTimer <= 0) { Map.message = ''; Map.messageTimer = 0; }
   }
-  Renderer.dt = dt;
-  Renderer.render(Player);
-  HUD.render(Renderer.ctx, Player);
+  try {
+    Renderer.dt = dt;
+    Renderer.render(Player);
+    HUD.render(Renderer.ctx, Player);
+  } catch (err) {
+    console.error('gameLoop error:', err);
+  }
   requestAnimationFrame(gameLoop);
 }
 
@@ -161,4 +171,7 @@ async function init() {
   requestAnimationFrame(gameLoop);
 }
 
-init();
+init().catch(err => {
+  console.error('Error al iniciar el juego:', err);
+  document.body.innerHTML = '<div style="color:#f85149;padding:2rem;text-align:center"><h1>Error al cargar el juego</h1><p>' + err.message + '</p></div>';
+});

@@ -145,7 +145,7 @@ const Sprite = {
     if (!this.animTimers[entityId]) this.animTimers[entityId] = 0;
     this.animTimers[entityId] += dt;
 
-    const speed = info.animSpeed || 0.2;
+    const speed = info.animSpeed > 0 ? info.animSpeed : 0.2;
     const frameIndex = Math.floor(this.animTimers[entityId] / speed) % info.frames;
     return this.getFrame(entityId, frameIndex, direction);
   },

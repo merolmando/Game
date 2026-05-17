@@ -92,10 +92,12 @@ const Renderer = {
     const mapH = map.height;
     const halfH = SCREEN_H / 2;
 
-    const floorImg = ctx.createImageData(SCREEN_W, halfH);
+    if (!this._floorImg) this._floorImg = ctx.createImageData(SCREEN_W, halfH);
+    const floorImg = this._floorImg;
     const fdata = floorImg.data;
     const aData = this.atlasImageData;
     const aW = aData.width;
+    let lightCacheX = -1, lightCacheY = -1, lightCache = { r: 1, g: 1, b: 1 };
 
     for (let x = 0; x < SCREEN_W; x++) {
       const ray = this.rays[x];
@@ -171,11 +173,15 @@ const Renderer = {
           }
         }
 
-        const lightFloor = Map.getLight(tileX, tileY);
+        if (tileX !== lightCacheX || tileY !== lightCacheY) {
+          lightCacheX = tileX;
+          lightCacheY = tileY;
+          lightCache = Map.getLight(tileX, tileY);
+        }
         const fi = ((y - halfH) * SCREEN_W + x) * 4;
-        fdata[fi] = Math.floor(r * lightFloor.r);
-        fdata[fi + 1] = Math.floor(g * lightFloor.g);
-        fdata[fi + 2] = Math.floor(b * lightFloor.b);
+        fdata[fi] = Math.floor(r * lightCache.r);
+        fdata[fi + 1] = Math.floor(g * lightCache.g);
+        fdata[fi + 2] = Math.floor(b * lightCache.b);
         fdata[fi + 3] = 255;
       }
     }
@@ -220,7 +226,7 @@ const Renderer = {
       light.g *= sideDark;
       light.b *= sideDark;
 
-      if (spriteAvailable && sprite) {
+      if (spriteAvailable && sprite && Sprite.atlas) {
         const texX = Math.floor(ray.wallX * sprite.frameW);
         ctx.drawImage(
           Sprite.atlas,
