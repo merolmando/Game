@@ -32,6 +32,7 @@ const ROUTES = {
   '/hitos/tareas': 'hitos.html',
   '/docs': 'docs.html',
   '/docs/gamecore': 'docs.html',
+  '/juego3d': 'juego3d.html',
 };
 
 const ROOT_DIR = path.join(__dirname, '..');

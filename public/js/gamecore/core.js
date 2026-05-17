@@ -72,10 +72,10 @@ async function resolveExitTarget(exit) {
 }
 
 async function loadMap(path, spawnData) {
-  Map.message = '';
-  Map.messageTimer = 0;
+  GameMap.message = '';
+  GameMap.messageTimer = 0;
   if (!path.startsWith('/')) path = '/maps/' + path + '.json';
-  const data = await Map.load(path);
+  const data = await GameMap.load(path);
   if (spawnData) {
     Player.x = spawnData.spawnX;
     Player.y = spawnData.spawnY;
@@ -116,11 +116,11 @@ async function gameLoop(timestamp) {
     if (Player.spawnTimer > 0) {
       Player.spawnTimer -= dt;
     } else if (Player.spawnTimer <= 0) {
-      const exit = Map.checkExits(Player.x, Player.y);
+      const exit = GameMap.checkExits(Player.x, Player.y);
       if (exit) {
         if (exit.locked && !Player.hasKey(exit.keyId)) {
-          Map.message = exit.label ? 'Necesitas una llave para abrir ' + exit.label : 'Puerta bloqueada';
-          Map.messageTimer = 2;
+          GameMap.message = exit.label ? 'Necesitas una llave para abrir ' + exit.label : 'Puerta bloqueada';
+          GameMap.messageTimer = 2;
         } else {
           Transition.start(1.0);
           resolveExitTarget(exit).then(({ target, spawnData }) => {
@@ -130,7 +130,7 @@ async function gameLoop(timestamp) {
               }).catch(err => {
                 console.error(err.message);
                 Transition.loaded = true;
-                Map.current = null;
+                GameMap.current = null;
               });
             } else {
               Transition.loaded = true;
@@ -142,9 +142,9 @@ async function gameLoop(timestamp) {
   }
 
   Transition.update(dt);
-  if (Map.messageTimer > 0) {
-    Map.messageTimer -= dt;
-    if (Map.messageTimer <= 0) { Map.message = ''; Map.messageTimer = 0; }
+  if (GameMap.messageTimer > 0) {
+    GameMap.messageTimer -= dt;
+    if (GameMap.messageTimer <= 0) { GameMap.message = ''; GameMap.messageTimer = 0; }
   }
   try {
     Renderer.dt = dt;

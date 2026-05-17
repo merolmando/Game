@@ -288,6 +288,28 @@
         <li><strong>docs/creador-tiles.md</strong> — Añadida propiedad <code>emissionColor</code> al listado de propiedades.</li>
       </ul>
     </article>
+    <article class="entry">
+      <h2>2026-05-18 — Motor 3D con Three.js: Fase 1 y 2</h2>
+      <p><strong>Fase 1 — Setup Three.js:</strong></p>
+      <ul>
+        <li>Nueva ruta <code>/juego3d</code> con pantalla completa, PointerLock, FPS camera con yaw+pitch.</li>
+        <li>Escena WebGL con luz ambiente + direccional, cielo <code>#1a1a2e</code>.</li>
+        <li>WASD reusa <code>Player.move()</code> del engine legacy con colisión circular 2D.</li>
+        <li>HUD con FPS y posición en pantalla.</li>
+        <li>Renombrado <code>Map</code> → <code>GameMap</code> para evitar conflicto con el Map nativo de JS que usa Three.js internamente. Afectó a todos los módulos del gamecore legacy.</li>
+      </ul>
+      <p><strong>Fase 2 — Vóxeles por Chunks:</strong></p>
+      <ul>
+        <li><code>chunk.js</code>: Sistema de chunks de 8×8 tiles. Cada chunk genera un <code>BufferGeometry</code> con merged mesh de vóxeles.</li>
+        <li>Vóxeles: terreno en y=-1 (de -1 a 0, superficie transitable en y=0), estructura en y=0 (de 0 a 1, paredes).</li>
+        <li>Culling de caras ocultas: no se generan caras entre vóxeles adyacentes del mismo tipo.</li>
+        <li>Vertex colors desde <code>tileColors</code> del mapa, material <code>MeshLambertMaterial</code> con iluminación.</li>
+        <li>Frustum culling por chunk: solo se renderizan chunks dentro del cono de visión.</li>
+        <li>Eliminado el placeholder ground de la Fase 1 (reemplazado por vóxeles reales del mapa).</li>
+        <li>Mapa <code>nuevo_mapa.json</code> totalmente funcional en 3D con suelo gris y paredes marrones.</li>
+      </ul>
+      <p><strong>Próximo:</strong> Fase 3 con sprites billboard del atlas (árboles, objetos, NPCs, enemigos).</p>
+    </article>
   </main>
 
   <footer>

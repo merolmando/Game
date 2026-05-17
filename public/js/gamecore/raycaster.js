@@ -40,7 +40,7 @@ const Raycaster = {
       let hit = 0;
       let side;
       let steps = 0;
-      const maxSteps = Math.max(Map.getWidth(), Map.getHeight()) * 2;
+      const maxSteps = Math.max(GameMap.getWidth(), GameMap.getHeight()) * 2;
 
       while (hit === 0 && steps < maxSteps) {
         steps++;
@@ -53,7 +53,7 @@ const Raycaster = {
           mapY += stepY;
           side = 1;
         }
-        if (Map.isWall(mapX, mapY)) hit = 1;
+        if (GameMap.isWall(mapX, mapY)) hit = 1;
       }
 
       let perpDist;
@@ -68,7 +68,7 @@ const Raycaster = {
       const drawStart = Math.max(0, -lineHeight / 2 + SCREEN_H / 2);
       const drawEnd = Math.min(SCREEN_H - 1, lineHeight / 2 + SCREEN_H / 2);
 
-      const tileType = Map.getTile(mapX, mapY, 'estructura');
+      const tileType = GameMap.getTile(mapX, mapY, 'estructura');
 
       let wallX;
       if (side === 0) {
@@ -96,7 +96,7 @@ const Raycaster = {
   getBillboards(player) {
     const billboards = [];
 
-    const grid = Map.getGrid('objetos');
+    const grid = GameMap.getGrid('objetos');
     if (grid) {
       for (let row = 0; row < grid.length; row++) {
         for (let col = 0; col < grid[row].length; col++) {
@@ -107,14 +107,14 @@ const Raycaster = {
       }
     }
 
-    if (Map.current.characters) {
-      for (const ch of Map.current.characters) {
+    if (GameMap.current.characters) {
+      for (const ch of GameMap.current.characters) {
         this._addBillboard(billboards, player, ch.x, ch.y, null, ch.entityId);
       }
     }
 
-    if (Map.current.enemies) {
-      for (const en of Map.current.enemies) {
+    if (GameMap.current.enemies) {
+      for (const en of GameMap.current.enemies) {
         this._addBillboard(billboards, player, en.x, en.y, null, en.entityId);
       }
     }

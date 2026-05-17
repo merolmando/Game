@@ -1,6 +1,6 @@
 const _lightmapChecked = new Set();
 
-const Map = {
+const GameMap = {
   current: null,
   message: '',
   messageTimer: 0,

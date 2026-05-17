@@ -42,7 +42,7 @@ const HUD = {
     if (!ref || typeof ref !== 'string') return 0;
     const parts = ref.split('.');
     const _g = parts.length > 1
-      ? { Player, Map, Renderer, Raycaster, Camera, Sprite, Input, HUD }
+      ? { Player, GameMap, Renderer, Raycaster, Camera, Sprite, Input, HUD }
       : window;
     let val = _g;
     for (const part of parts) {
@@ -151,18 +151,18 @@ const HUD = {
       ctx.strokeRect(x, y, w, h);
     }
 
-    if (!Map.current) return;
+    if (!GameMap.current) return;
     const scale = el.scale || 4;
-    const grid = Map.getGrid('estructura') || Map.getGrid('terreno');
+    const grid = GameMap.getGrid('estructura') || GameMap.getGrid('terreno');
     if (!grid) return;
 
-    const mw = Math.min(Map.current.width, Math.floor(w / scale));
-    const mh = Math.min(Map.current.height, Math.floor(h / scale));
+    const mw = Math.min(GameMap.current.width, Math.floor(w / scale));
+    const mh = Math.min(GameMap.current.height, Math.floor(h / scale));
 
     for (let row = 0; row < mh; row++) {
       for (let col = 0; col < mw; col++) {
         const tile = grid[row] && grid[row][col];
-        const info = tile && Map.current.tileColors ? Map.current.tileColors[tile] : null;
+        const info = tile && GameMap.current.tileColors ? GameMap.current.tileColors[tile] : null;
         ctx.fillStyle = info ? info.color : '#333';
         ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
       }

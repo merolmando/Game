@@ -26,8 +26,8 @@ const Renderer = {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, SCREEN_W, SCREEN_H);
 
-    if (!Map.current) return;
-    this.mode = Map.current.mode;
+    if (!GameMap.current) return;
+    this.mode = GameMap.current.mode;
 
     if (this.mode === 'ray') {
       Raycaster.cast(this.rays, player);
@@ -45,7 +45,7 @@ const Renderer = {
   },
 
   drawCeiling(ctx) {
-    const sky = Map.current.layers ? Map.current.layers.cielo : null;
+    const sky = GameMap.current.layers ? GameMap.current.layers.cielo : null;
     if (sky && sky.type === 'solid') {
       ctx.fillStyle = sky.color;
     } else {
@@ -55,11 +55,11 @@ const Renderer = {
   },
 
   _drawSolidFloor(ctx, player) {
-    if (Map.current && Map.current.layers && Map.current.layers.terreno && player) {
+    if (GameMap.current && GameMap.current.layers && GameMap.current.layers.terreno && player) {
       const px = Math.floor(player.x);
       const py = Math.floor(player.y);
-      const tileId = (Map.current.layers.terreno[py] && Map.current.layers.terreno[py][px]) || 0;
-      const info = Map.current.tileColors ? Map.current.tileColors[tileId] : null;
+      const tileId = (GameMap.current.layers.terreno[py] && GameMap.current.layers.terreno[py][px]) || 0;
+      const info = GameMap.current.tileColors ? GameMap.current.tileColors[tileId] : null;
       ctx.fillStyle = info ? info.color : '#2d2d44';
     } else {
       ctx.fillStyle = '#2d2d44';
@@ -72,7 +72,7 @@ const Renderer = {
       this._buildAtlasData();
     }
 
-    const map = Map.current;
+    const map = GameMap.current;
     if (!map || !map.layers || !map.layers.terreno || !player) {
       this._drawSolidFloor(ctx, player);
       return;
@@ -176,7 +176,7 @@ const Renderer = {
         if (tileX !== lightCacheX || tileY !== lightCacheY) {
           lightCacheX = tileX;
           lightCacheY = tileY;
-          lightCache = Map.getLight(tileX, tileY);
+          lightCache = GameMap.getLight(tileX, tileY);
         }
         const fi = ((y - halfH) * SCREEN_W + x) * 4;
         fdata[fi] = Math.floor(r * lightCache.r);
@@ -194,8 +194,8 @@ const Renderer = {
 
     for (let x = 0; x < this.rays.length; x++) {
       const ray = this.rays[x];
-      const hasTileSprites = Map.current.tileSprites;
-      const entityId = hasTileSprites ? Map.current.tileSprites[ray.tileType] : null;
+      const hasTileSprites = GameMap.current.tileSprites;
+      const entityId = hasTileSprites ? GameMap.current.tileSprites[ray.tileType] : null;
       const sprite = entityId ? Sprite.getEntity(entityId) : null;
       // Luz del tile adyacente a la cara visible de la pared
       let lx = ray.mapX, ly = ray.mapY;
@@ -204,16 +204,16 @@ const Renderer = {
 
       let light;
       if (ray.side === 0) {
-        const a = Map.getLight(lx, ray.mapY - 1);
-        const b = Map.getLight(lx, ray.mapY);
+        const a = GameMap.getLight(lx, ray.mapY - 1);
+        const b = GameMap.getLight(lx, ray.mapY);
         light = {
           r: a.r + (b.r - a.r) * ray.wallX,
           g: a.g + (b.g - a.g) * ray.wallX,
           b: a.b + (b.b - a.b) * ray.wallX,
         };
       } else {
-        const a = Map.getLight(ray.mapX - 1, ly);
-        const b = Map.getLight(ray.mapX, ly);
+        const a = GameMap.getLight(ray.mapX - 1, ly);
+        const b = GameMap.getLight(ray.mapX, ly);
         light = {
           r: a.r + (b.r - a.r) * ray.wallX,
           g: a.g + (b.g - a.g) * ray.wallX,
@@ -240,7 +240,7 @@ const Renderer = {
           ctx.globalCompositeOperation = 'source-over';
         }
       } else {
-        const info = Map.current.tileColors[ray.tileType];
+        const info = GameMap.current.tileColors[ray.tileType];
         const baseColor = info ? info.color : '#888';
         const intensity = (light.r + light.g + light.b) / 3;
         const shade = intensity * (ray.side === 1 ? 0.6 : 1);
@@ -254,8 +254,8 @@ const Renderer = {
     const billboards = Raycaster.getBillboards(player);
     for (const obj of billboards) {
       let entityId = obj.entityId;
-      if (!entityId && Map.current.tileSprites) entityId = Map.current.tileSprites[obj.tileId];
-      const light = Map.getLight(obj.bx, obj.by);
+      if (!entityId && GameMap.current.tileSprites) entityId = GameMap.current.tileSprites[obj.tileId];
+      const light = GameMap.getLight(obj.bx, obj.by);
 
       for (let stripe = obj.drawStartX; stripe <= obj.drawEndX; stripe++) {
         if (stripe < 0 || stripe >= SCREEN_W) continue;
@@ -286,7 +286,7 @@ const Renderer = {
           }
         } else {
           const colorId = obj.tileId || 1;
-          const info = Map.current.tileColors ? Map.current.tileColors[colorId] : null;
+          const info = GameMap.current.tileColors ? GameMap.current.tileColors[colorId] : null;
           const intensity = (light.r + light.g + light.b) / 3;
           ctx.fillStyle = this.shadeColor(info ? info.color : '#888', intensity);
           ctx.fillRect(stripe, obj.drawStartY, 1, obj.drawEndY - obj.drawStartY);
@@ -298,15 +298,15 @@ const Renderer = {
   drawMinimap(ctx, player) {
     const scale = 4;
     const offsetX = 10;
-    const offsetY = SCREEN_H - Map.getHeight() * scale - 10;
+    const offsetY = SCREEN_H - GameMap.getHeight() * scale - 10;
 
-    const grid = Map.getGrid('estructura') || Map.getGrid('terreno');
+    const grid = GameMap.getGrid('estructura') || GameMap.getGrid('terreno');
     if (!grid) return;
 
-    for (let y = 0; y < Map.getHeight(); y++) {
-      for (let x = 0; x < Map.getWidth(); x++) {
+    for (let y = 0; y < GameMap.getHeight(); y++) {
+      for (let x = 0; x < GameMap.getWidth(); x++) {
         const tile = grid[y][x];
-        const info = Map.current.tileColors[tile];
+        const info = GameMap.current.tileColors[tile];
         ctx.fillStyle = info ? info.color : '#333';
         ctx.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale);
       }
@@ -327,7 +327,7 @@ const Renderer = {
   },
 
   drawSky(ctx) {
-    const sky = Map.current.layers ? Map.current.layers.cielo : null;
+    const sky = GameMap.current.layers ? GameMap.current.layers.cielo : null;
     if (sky && sky.type === 'solid') {
       ctx.fillStyle = sky.color;
     } else {
@@ -337,8 +337,8 @@ const Renderer = {
   },
 
   drawLayer(ctx, layerName) {
-    const map = Map.current;
-    const grid = Map.getGrid(layerName);
+    const map = GameMap.current;
+    const grid = GameMap.getGrid(layerName);
     if (!grid) return;
 
     const ts = map.tileSize;
@@ -361,7 +361,7 @@ const Renderer = {
         let entityId = null;
         if (map.tileSprites) entityId = map.tileSprites[tile];
 
-        const light = Map.getLight(col, row);
+        const light = GameMap.getLight(col, row);
 
         if (spriteAvailable && entityId && Sprite.getEntity(entityId)) {
           const info = Sprite.getEntity(entityId);
@@ -392,7 +392,7 @@ const Renderer = {
   },
 
   draw2D(ctx, player) {
-    const map = Map.current;
+    const map = GameMap.current;
     const ts = map.tileSize;
     const mapPixelW = map.width * ts;
     const mapPixelH = map.height * ts;
@@ -410,7 +410,7 @@ const Renderer = {
       const ex = Math.round(exit.tileX * ts - Camera.x);
       const ey = Math.round(exit.tileY * ts - Camera.y);
 
-      const exitTileId = Map.getTile(exit.tileX, exit.tileY, 'estructura');
+      const exitTileId = GameMap.getTile(exit.tileX, exit.tileY, 'estructura');
       let entityId = null;
       if (map.tileSprites) entityId = map.tileSprites[exitTileId];
 
@@ -487,7 +487,7 @@ const Renderer = {
     }
 
     if (spriteAvailable) {
-      for (const ch of Map.current.characters || []) {
+      for (const ch of GameMap.current.characters || []) {
         const cx = Math.round(ch.x * ts - Camera.x);
         const cy = Math.round(ch.y * ts - Camera.y);
         const cInfo = Sprite.getEntity(ch.entityId);
@@ -496,7 +496,7 @@ const Renderer = {
         const chb = cInfo && cInfo.halfBlock && cH > ts;
         Sprite.drawAnim(ctx, ch.entityId, cx - cW / 2, cy - (chb ? cH / 2 : cH), cW, chb ? cH / 2 : cH, this.dt || 0.016);
       }
-      for (const en of Map.current.enemies || []) {
+      for (const en of GameMap.current.enemies || []) {
         const ex = Math.round(en.x * ts - Camera.x);
         const ey = Math.round(en.y * ts - Camera.y);
         const eInfo = Sprite.getEntity(en.entityId);
@@ -509,11 +509,11 @@ const Renderer = {
   },
 
   drawMessage(ctx) {
-    if (Map.message && Map.messageTimer > 0) {
+    if (GameMap.message && GameMap.messageTimer > 0) {
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.font = '14px sans-serif';
-      const mw = ctx.measureText(Map.message).width + 40;
+      const mw = ctx.measureText(GameMap.message).width + 40;
       const mh = 36;
       const mx = (SCREEN_W - mw) / 2;
       const my = SCREEN_H - 60;
@@ -533,7 +533,7 @@ const Renderer = {
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(Map.message, SCREEN_W / 2, my + mh / 2);
+      ctx.fillText(GameMap.message, SCREEN_W / 2, my + mh / 2);
       ctx.restore();
     }
   },

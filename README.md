@@ -52,7 +52,13 @@ El sitio se divide en dos grandes vertientes:
 - [x] **TileW/TileH**: Entidades declaran tamaño en tiles. `frameW = tileW * tileSize`, `frameH = tileH * tileSize`. `halfBlock` renderiza a mitad de altura (raycaster y 2D). `raycaster.js` `_addBillboard` usa tileW/tileH. `renderer.js` usa frameW/frameH.
 - [x] **5 DevTools adaptadas a multi-atlas**: visor-atlas (canvas apilados, selector de atlas, detalle con dirFrames, dirección en preview), inspector-mapa (loadAtlases multi-grupo, selector de dirección en personajes), creador-tiles (campos tileW/tileH/directions/halfBlock guardados, spriteToBase64 multi-dir), cortador-texturas (campos tileW/tileH/directions/halfBlock en selecciones), editor-hud (loadAtlasInfo multi-grupo, atlas tags).
 - [x] **halfBlock en renderer 2D**: drawLayer y draw2D reducen altura a la mitad para player, characters y enemies.
+- [x] **Motor 3D (Three.js)**: Nueva ruta `/juego3d` con escena WebGL, PointerLock, mouse look (yaw+pitch), WASD con colisión reusada.
+- [x] **Sistema de Chunks 8×8**: División del mapa en chunks de 8×8 tiles. Cada chunk genera un BufferGeometry con vóxeles (terreno en y=-1, estructura en y=0). Vertex colors desde `tileColors`. Culling de caras ocultas entre vóxeles adyacentes.
+- [x] **Frustum Culling**: Solo se renderizan los chunks dentro del cono de visión de la cámara.
 
 ## 📅 Próximos Hitos
 - [ ] **Hito 2: Interacción**: Creación de objetos básicos y NPCs con IA simple.
 - [ ] **Hito 3: Atributos**: Sistema de estadísticas (HP, MP, STR, INT) e inventario.
+- [ ] **Fase 3 (Three.js)**: Sprites billboard del atlas para árboles, objetos, NPCs y enemigos.
+- [ ] **Fase 4 (Three.js)**: LOD 4 niveles por chunk (detalle → merge 2×2→ impostor → oculto).
+- [ ] **Fase 5 (Three.js)**: Exits con fade, HUD overlay, pulido final.
